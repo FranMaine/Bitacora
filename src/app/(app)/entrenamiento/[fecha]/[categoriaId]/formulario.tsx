@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Check, Clock } from "lucide-react";
+import { Check, Clock, MessageSquare, MessageSquareText } from "lucide-react";
+import { Avatar } from "@/components/avatar";
 import { guardarEntrenamiento, type EstadoEntrenamiento } from "./actions";
 import { formatoDuracion, minutosEntre } from "@/lib/calculos";
 
@@ -20,6 +21,7 @@ type Props = {
     temasPlan: string[];
     temasHecho: string[];
     presentes: string[];
+    notas: Record<string, string>;
   };
 };
 
@@ -45,6 +47,9 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, in
   const [resumen, setResumen] = useState(inicial.resumen);
   const [temasPlan, setTemasPlan] = useState(() => new Set(inicial.temasPlan));
   const [temasHecho, setTemasHecho] = useState(() => new Set(inicial.temasHecho));
+  const [notas, setNotas] = useState<Record<string, string>>(inicial.notas);
+  // Cuáles tienen el textarea expandido ahora mismo (vuelve a su estado al navegar).
+  const [abiertas, setAbiertas] = useState<Set<string>>(() => new Set(Object.keys(inicial.notas).filter((k) => inicial.notas[k])));
 
   const minutos = minutosEntre(bajada, regreso);
   const todos = alumnos.length > 0 && presentes.size === alumnos.length;
@@ -140,22 +145,60 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, in
           <p className="text-sm text-suave">Esta categoría todavía no tiene alumnos. Cargalos en la sección Alumnos.</p>
         ) : (
           <ul className="divide-y divide-borde rounded-[12px] border border-borde">
-            {alumnos.map((a) => (
-              <li key={a.id}>
-                <input type="hidden" name="alumno" value={a.id} />
-                <label className="flex min-h-12 cursor-pointer items-center gap-3 px-3 py-2">
-                  <input
-                    type="checkbox"
-                    name="presente"
-                    value={a.id}
-                    checked={presentes.has(a.id)}
-                    onChange={() => alternar(presentes, setPresentes, a.id)}
-                    className="size-5 accent-[var(--acento)]"
-                  />
-                  <span>{a.nombre}</span>
-                </label>
-              </li>
-            ))}
+            {alumnos.map((a) => {
+              const nota = notas[a.id] ?? "";
+              const tieneNota = nota.trim().length > 0;
+              const abierta = abiertas.has(a.id);
+              const Icono = tieneNota ? MessageSquareText : MessageSquare;
+              return (
+                <li key={a.id}>
+                  <input type="hidden" name="alumno" value={a.id} />
+                  <div className="flex min-h-12 items-center gap-3 px-3 py-2">
+                    <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
+                      <input
+                        type="checkbox"
+                        name="presente"
+                        value={a.id}
+                        checked={presentes.has(a.id)}
+                        onChange={() => alternar(presentes, setPresentes, a.id)}
+                        className="size-5 shrink-0 accent-[var(--acento)]"
+                      />
+                      <Avatar nombre={a.nombre} tam={28} />
+                      <span className="truncate">{a.nombre}</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const n = new Set(abiertas);
+                        if (n.has(a.id)) n.delete(a.id);
+                        else n.add(a.id);
+                        setAbiertas(n);
+                      }}
+                      aria-expanded={abierta}
+                      aria-label={tieneNota ? `Observación de ${a.nombre}` : `Agregar observación sobre ${a.nombre}`}
+                      className={`flex size-9 shrink-0 items-center justify-center rounded-full transition-colors ${
+                        tieneNota ? "text-acento" : "text-suave hover:text-texto"
+                      }`}
+                    >
+                      <Icono size={18} aria-hidden />
+                    </button>
+                  </div>
+                  {abierta && (
+                    <div className="px-3 pb-3">
+                      <textarea
+                        name={`nota_${a.id}`}
+                        rows={2}
+                        value={nota}
+                        onChange={(e) => setNotas({ ...notas, [a.id]: e.target.value })}
+                        placeholder={`Algo sobre ${a.nombre.split(" ")[0]}…`}
+                        className="campo text-sm"
+                        maxLength={500}
+                      />
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

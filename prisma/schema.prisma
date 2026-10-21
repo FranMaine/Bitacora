@@ -113,6 +113,9 @@ model Asistencia {
   alumnoId        String
   alumno          Alumno        @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
   presente        Boolean       @default(true)
+  // Observación corta sobre ese alumno ese día (algo puntual: se marchó, pelea
+  // con otro, hoy anduvo bárbaro...). Opcional; aparece en la ficha del alumno.
+  nota            String?
 
   @@id([entrenamientoId, alumnoId])
   @@index([alumnoId])

@@ -83,11 +83,15 @@ export async function guardarEntrenamiento(
       })),
     });
     await tx.asistencia.createMany({
-      data: [...alumnosValidos].map((alumnoId) => ({
-        entrenamientoId: e.id,
-        alumnoId,
-        presente: presentes.has(alumnoId),
-      })),
+      data: [...alumnosValidos].map((alumnoId) => {
+        const nota = String(formData.get(`nota_${alumnoId}`) ?? "").trim().slice(0, 500);
+        return {
+          entrenamientoId: e.id,
+          alumnoId,
+          presente: presentes.has(alumnoId),
+          nota: nota || null,
+        };
+      }),
     });
   });
 

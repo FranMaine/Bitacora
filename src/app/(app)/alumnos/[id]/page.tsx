@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, Check, X } from "lucide-react";
+import { ChevronLeft, Check, X, MessageSquareText } from "lucide-react";
 import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
 import { deFechaDB, fechaCorta, nombrePeriodo, periodoActual, periodoCorto } from "@/lib/fechas";
@@ -105,16 +105,35 @@ export default async function FichaAlumno({ params }: { params: Promise<{ id: st
                 <li
                   key={a.entrenamientoId}
                   className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-sm ${a.presente ? "bg-ok-suave text-ok" : "bg-alerta-suave text-alerta"}`}
+                  title={a.nota ?? undefined}
                 >
                   {a.presente ? <Check size={14} aria-hidden /> : <X size={14} aria-hidden />}
                   <span className="sr-only">{a.presente ? "Presente" : "Ausente"} el</span>
                   {fechaCorta(f)}
+                  {a.nota && <MessageSquareText size={12} aria-label="Con observación" />}
                 </li>
               );
             })}
           </ul>
         )}
       </section>
+
+      {asistencias.some((a) => a.nota) && (
+        <section className="caja p-4">
+          <h2 className="mb-2 font-semibold">Observaciones</h2>
+          <ul className="divide-y divide-borde">
+            {asistencias
+              .filter((a) => a.nota)
+              .slice(0, 20)
+              .map((a) => (
+                <li key={a.entrenamientoId} className="py-2.5">
+                  <p className="text-xs text-suave">{fechaCorta(deFechaDB(a.entrenamiento.fecha))}</p>
+                  <p className="mt-0.5 text-sm whitespace-pre-wrap">{a.nota}</p>
+                </li>
+              ))}
+          </ul>
+        </section>
+      )}
 
       <FormularioEdicion
         alumno={{ id: alumno.id, nombre: alumno.nombre, categoriaId: alumno.categoriaId, notas: alumno.notas }}

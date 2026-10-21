@@ -64,6 +64,7 @@ export default async function PaginaEntrenamiento({ params }: { params: Promise<
           temasPlan: entrenamiento?.temas.filter((t) => t.planificado).map((t) => t.temaId) ?? [],
           temasHecho: entrenamiento?.temas.filter((t) => t.realizado).map((t) => t.temaId) ?? [],
           presentes: entrenamiento?.asistencias.filter((a) => a.presente).map((a) => a.alumnoId) ?? [],
+          notas: Object.fromEntries((entrenamiento?.asistencias ?? []).filter((a) => a.nota).map((a) => [a.alumnoId, a.nota as string])),
         }}
       />
     </div>

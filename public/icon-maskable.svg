@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Variante "maskable": el ícono vive en el 80% central (safe zone) y el fondo
+     se extiende hasta el borde, para que Android pueda recortarlo en círculo
+     o cuadrado redondeado sin cortar la ilustración. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#0b5f8f"/>
+  <g transform="translate(51 51) scale(0.8)">
+    <path d="M 256 108 L 256 328 L 160 328 Z" fill="#f6f7f8"/>
+    <path d="M 268 148 L 268 328 L 350 328 Z" fill="#dfe3e7"/>
+    <path d="M 128 356 L 384 356 L 352 400 L 160 400 Z" fill="#f6f7f8"/>
+    <path d="M 72 430 Q 128 410 184 430 T 296 430 T 408 430 T 440 430"
+          stroke="#8ccbf2" stroke-width="12" stroke-linecap="round" fill="none"/>
+    <path d="M 72 468 Q 128 448 184 468 T 296 468 T 408 468 T 440 468"
+          stroke="#5fb4e6" stroke-width="12" stroke-linecap="round" fill="none" opacity="0.7"/>
+  </g>
+</svg>
