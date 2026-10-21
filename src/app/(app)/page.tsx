@@ -3,8 +3,9 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
 import { aFechaDB, fechaLarga, hoyAR, sumarDias } from "@/lib/fechas";
-import { formatoDuracion, minutosEntre } from "@/lib/calculos";
+import { minutosEntre } from "@/lib/calculos";
 import { SelectorFecha } from "@/components/selector-fecha";
+import { TarjetasCategorias } from "./tarjetas-categorias";
 
 export const metadata = { title: "Hoy" };
 
@@ -50,51 +51,21 @@ export default async function PaginaHoy({ searchParams }: { searchParams: Promis
           Todavía no hay categorías. Creá la primera en <Link href="/ajustes" className="text-acento underline">Ajustes</Link>.
         </p>
       ) : (
-        <ul className="space-y-3">
-          {categorias.map((c) => {
+        <TarjetasCategorias
+          fecha={fecha}
+          categorias={categorias.map((c) => {
             const e = porCategoria.get(c.id);
-            const total = cantidad.get(c.id) ?? 0;
-            const presentes = e?.asistencias.filter((a) => a.presente).length ?? 0;
-            const minutos = e ? minutosEntre(e.horaBajada, e.horaRegreso) : null;
-            const estado = e?.realizado ? "Realizado" : e ? "Planificado" : null;
-            return (
-              <li key={c.id}>
-                <Link
-                  href={`/entrenamiento/${fecha}/${c.id}`}
-                  className="caja flex items-center justify-between gap-3 p-4 transition-colors hover:border-acento"
-                >
-                  <div className="min-w-0">
-                    <p className="font-semibold">{c.nombre}</p>
-                    <p className="mt-0.5 text-sm text-suave">
-                      {total} {total === 1 ? "alumno" : "alumnos"}
-                      {e?.realizado && ` · ${presentes} presentes`}
-                      {minutos !== null && ` · ${formatoDuracion(minutos)} en el agua`}
-                    </p>
-                    {e && e.temas.length > 0 && (
-                      <p className="mt-1 truncate text-sm text-suave">
-                        {e.temas.map((t) => t.tema.nombre).join(", ")}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    {estado ? (
-                      <span
-                        className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          e?.realizado ? "bg-ok-suave text-ok" : "bg-alerta-suave text-alerta"
-                        }`}
-                      >
-                        {estado}
-                      </span>
-                    ) : (
-                      <span className="text-sm text-suave">Sin cargar</span>
-                    )}
-                    <ChevronRight size={18} className="text-suave" aria-hidden />
-                  </div>
-                </Link>
-              </li>
-            );
+            return {
+              id: c.id,
+              nombre: c.nombre,
+              total: cantidad.get(c.id) ?? 0,
+              presentes: e?.asistencias.filter((a) => a.presente).length ?? 0,
+              minutos: e ? minutosEntre(e.horaBajada, e.horaRegreso) : null,
+              estado: e?.realizado ? "realizado" : e ? "planificado" : "sin_cargar",
+              temas: e?.temas.map((t) => t.tema.nombre) ?? [],
+            };
           })}
-        </ul>
+        />
       )}
     </div>
   );

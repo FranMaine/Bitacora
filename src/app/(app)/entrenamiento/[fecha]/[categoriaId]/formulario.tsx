@@ -65,7 +65,18 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, in
           <textarea id="plan" name="plan" rows={3} value={plan} onChange={(e) => setPlan(e.target.value)} className="campo" placeholder="Ej.: salir a boyas, práctica de largadas…" />
         </div>
         <fieldset>
-          <legend className="etiqueta">Temas</legend>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <legend className="etiqueta !mb-0">Temas</legend>
+            {temas.length > 0 && temasPlan.size > 0 && (
+              <button
+                type="button"
+                onClick={() => setTemasHecho(new Set([...temasHecho, ...temasPlan]))}
+                className="text-xs font-medium text-acento underline-offset-4 hover:underline"
+              >
+                Copiar plan → hecho
+              </button>
+            )}
+          </div>
           {temas.length === 0 ? (
             <p className="text-sm text-suave">No hay temas cargados (se editan en Ajustes).</p>
           ) : (

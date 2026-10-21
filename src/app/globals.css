@@ -149,12 +149,29 @@ body {
   .chip {
     display: inline-flex;
     align-items: center;
+    gap: 0.25rem;
     padding: 0.125rem 0.625rem;
     border-radius: 999px;
     background: var(--acento-suave);
     color: var(--acento);
     font-size: 0.8125rem;
     font-weight: 500;
+    white-space: nowrap;
+  }
+  .chip-ok { background: var(--ok-suave); color: var(--ok); }
+  .chip-alerta { background: var(--alerta-suave); color: var(--alerta); }
+  .chip-neutro { background: color-mix(in oklab, var(--borde) 60%, transparent); color: var(--texto-suave); }
+
+  .avatar {
+    background: hsl(var(--h) 55% 92%);
+    color: hsl(var(--h) 60% 32%);
+    letter-spacing: -0.02em;
+  }
+  @media (prefers-color-scheme: dark) {
+    .avatar {
+      background: hsl(var(--h) 40% 22%);
+      color: hsl(var(--h) 70% 78%);
+    }
   }
 }
 
