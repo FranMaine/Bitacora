@@ -22,6 +22,6 @@ export const config = {
   // Dejamos pasar sin sesión los archivos públicos y los que necesita el PWA
   // (manifest, service worker e iconos) — son archivos estáticos sin datos.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|icon.svg|icon-maskable.svg|manifest.webmanifest|sw.js|robots.txt).*)",
+    "/((?!_next/static|_next/image|favicon.ico|icon.svg|icon-maskable.svg|cvsi.webp|clases|manifest.webmanifest|sw.js|robots.txt).*)",
   ],
 };

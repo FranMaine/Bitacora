@@ -61,152 +61,170 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, in
     setSet(n);
   }
 
-  return (
-    <form action={enviar} className="space-y-5">
-      <section className="caja space-y-3 p-4">
-        <h2 className="font-semibold">Plan</h2>
-        <div>
-          <label htmlFor="plan" className="etiqueta">Qué se piensa hacer</label>
-          <textarea id="plan" name="plan" rows={3} value={plan} onChange={(e) => setPlan(e.target.value)} className="campo" placeholder="Ej.: salir a boyas, práctica de largadas…" />
-        </div>
-        <fieldset>
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <legend className="etiqueta !mb-0">Temas</legend>
-            {temas.length > 0 && temasPlan.size > 0 && (
-              <button
-                type="button"
-                onClick={() => setTemasHecho(new Set([...temasHecho, ...temasPlan]))}
-                className="text-xs font-medium text-acento underline-offset-4 hover:underline"
-              >
-                Copiar plan → hecho
-              </button>
-            )}
+  const seccionEnElAgua = (
+    <section className="caja space-y-3 p-4">
+      <h2 className="font-semibold">En el agua</h2>
+      <div className="grid grid-cols-2 gap-3">
+        {[
+          { id: "horaBajada", texto: "Bajada", valor: bajada, set: setBajada },
+          { id: "horaRegreso", texto: "Regreso", valor: regreso, set: setRegreso },
+        ].map((c) => (
+          <div key={c.id}>
+            <label htmlFor={c.id} className="etiqueta">{c.texto}</label>
+            <input id={c.id} name={c.id} type="time" value={c.valor} onChange={(e) => c.set(e.target.value)} className="campo" />
+            <button type="button" onClick={() => c.set(ahora())} className="boton mt-2 w-full">
+              <Clock size={16} aria-hidden /> Ahora
+            </button>
           </div>
-          {temas.length === 0 ? (
-            <p className="text-sm text-suave">No hay temas cargados (se editan en Ajustes).</p>
-          ) : (
-            <div className="divide-y divide-borde rounded-[12px] border border-borde">
-              <div className="grid grid-cols-[1fr_auto_auto] items-center gap-4 px-3 py-1.5 text-xs font-medium text-suave">
-                <span>Tema</span>
-                <span className="w-14 text-center">Plan</span>
-                <span className="w-14 text-center">Hecho</span>
-              </div>
-              {temas.map((t) => (
-                <div key={t.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-4 px-3">
-                  <span className="py-2.5">{t.nombre}</span>
-                  <label className="flex h-11 w-14 cursor-pointer items-center justify-center">
-                    <input type="checkbox" name="temaPlan" aria-label={`${t.nombre}: planificado`} value={t.id} checked={temasPlan.has(t.id)} onChange={() => alternar(temasPlan, setTemasPlan, t.id)} className="size-5 accent-[var(--acento)]" />
-                  </label>
-                  <label className="flex h-11 w-14 cursor-pointer items-center justify-center">
-                    <input type="checkbox" name="temaHecho" aria-label={`${t.nombre}: realizado`} value={t.id} checked={temasHecho.has(t.id)} onChange={() => alternar(temasHecho, setTemasHecho, t.id)} className="size-5 accent-[var(--acento)]" />
-                  </label>
-                </div>
-              ))}
-            </div>
-          )}
-        </fieldset>
-      </section>
+        ))}
+      </div>
+      {minutos !== null && (
+        <p className="text-sm text-suave">
+          Tiempo en el agua: <strong className="text-texto">{formatoDuracion(minutos)}</strong>
+        </p>
+      )}
+    </section>
+  );
 
-      <section className="caja space-y-3 p-4">
-        <h2 className="font-semibold">En el agua</h2>
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { id: "horaBajada", texto: "Bajada", valor: bajada, set: setBajada },
-            { id: "horaRegreso", texto: "Regreso", valor: regreso, set: setRegreso },
-          ].map((c) => (
-            <div key={c.id}>
-              <label htmlFor={c.id} className="etiqueta">{c.texto}</label>
-              <input id={c.id} name={c.id} type="time" value={c.valor} onChange={(e) => c.set(e.target.value)} className="campo" />
-              <button type="button" onClick={() => c.set(ahora())} className="boton mt-2 w-full">
-                <Clock size={16} aria-hidden /> Ahora
-              </button>
-            </div>
-          ))}
-        </div>
-        {minutos !== null && (
-          <p className="text-sm text-suave">
-            Tiempo en el agua: <strong className="text-texto">{formatoDuracion(minutos)}</strong>
-          </p>
+  const seccionAsistencia = (
+    <section className="caja space-y-3 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="font-semibold">
+          Asistencia <span className="font-normal text-suave">· {presentes.size}/{alumnos.length}</span>
+        </h2>
+        {alumnos.length > 0 && (
+          <button type="button" className="boton !min-h-9 text-sm" onClick={() => setPresentes(todos ? new Set() : new Set(alumnos.map((a) => a.id)))}>
+            {todos ? "Desmarcar todos" : "Marcar todos"}
+          </button>
         )}
-      </section>
+      </div>
+      {alumnos.length === 0 ? (
+        <p className="text-sm text-suave">Esta categoría todavía no tiene alumnos. Cargalos en la sección Alumnos.</p>
+      ) : (
+        <ul className="divide-y divide-borde rounded-[12px] border border-borde">
+          {alumnos.map((a) => {
+            const nota = notas[a.id] ?? "";
+            const tieneNota = nota.trim().length > 0;
+            const abierta = abiertas.has(a.id);
+            const Icono = tieneNota ? MessageSquareText : MessageSquare;
+            return (
+              <li key={a.id}>
+                <input type="hidden" name="alumno" value={a.id} />
+                <div className="flex min-h-12 items-center gap-3 px-3 py-2">
+                  <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
+                    <input
+                      type="checkbox"
+                      name="presente"
+                      value={a.id}
+                      checked={presentes.has(a.id)}
+                      onChange={() => alternar(presentes, setPresentes, a.id)}
+                      className="size-5 shrink-0 accent-[var(--acento)]"
+                    />
+                    <Avatar nombre={a.nombre} tam={28} />
+                    <span className="truncate">{a.nombre}</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const n = new Set(abiertas);
+                      if (n.has(a.id)) n.delete(a.id);
+                      else n.add(a.id);
+                      setAbiertas(n);
+                    }}
+                    aria-expanded={abierta}
+                    aria-label={tieneNota ? `Observación de ${a.nombre}` : `Agregar observación sobre ${a.nombre}`}
+                    className={`flex size-9 shrink-0 items-center justify-center rounded-full transition-colors ${
+                      tieneNota ? "text-acento" : "text-suave hover:text-texto"
+                    }`}
+                  >
+                    <Icono size={18} aria-hidden />
+                  </button>
+                </div>
+                {abierta && (
+                  <div className="aparecer px-3 pb-3">
+                    <textarea
+                      name={`nota_${a.id}`}
+                      rows={2}
+                      value={nota}
+                      onChange={(e) => setNotas({ ...notas, [a.id]: e.target.value })}
+                      placeholder={`Algo sobre ${a.nombre.split(" ")[0]}…`}
+                      className="campo text-sm"
+                      maxLength={500}
+                    />
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
 
-      <section className="caja space-y-3 p-4">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="font-semibold">
-            Asistencia <span className="font-normal text-suave">· {presentes.size}/{alumnos.length}</span>
-          </h2>
-          {alumnos.length > 0 && (
-            <button type="button" className="boton !min-h-9 text-sm" onClick={() => setPresentes(todos ? new Set() : new Set(alumnos.map((a) => a.id)))}>
-              {todos ? "Desmarcar todos" : "Marcar todos"}
+  const seccionPlanYTemas = (
+    <section className="caja space-y-3 p-4">
+      <h2 className="font-semibold">Plan y temas</h2>
+      <div>
+        <label htmlFor="plan" className="etiqueta">Qué se piensa hacer</label>
+        <textarea id="plan" name="plan" rows={3} value={plan} onChange={(e) => setPlan(e.target.value)} className="campo" placeholder="Ej.: salir a boyas, práctica de largadas…" />
+      </div>
+      <fieldset>
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <legend className="etiqueta !mb-0">Temas</legend>
+          {temas.length > 0 && temasPlan.size > 0 && (
+            <button
+              type="button"
+              onClick={() => setTemasHecho(new Set([...temasHecho, ...temasPlan]))}
+              className="text-xs font-medium text-acento underline-offset-4 hover:underline"
+            >
+              Copiar plan → hecho
             </button>
           )}
         </div>
-        {alumnos.length === 0 ? (
-          <p className="text-sm text-suave">Esta categoría todavía no tiene alumnos. Cargalos en la sección Alumnos.</p>
+        {temas.length === 0 ? (
+          <p className="text-sm text-suave">No hay temas cargados (se editan en Ajustes).</p>
         ) : (
-          <ul className="divide-y divide-borde rounded-[12px] border border-borde">
-            {alumnos.map((a) => {
-              const nota = notas[a.id] ?? "";
-              const tieneNota = nota.trim().length > 0;
-              const abierta = abiertas.has(a.id);
-              const Icono = tieneNota ? MessageSquareText : MessageSquare;
-              return (
-                <li key={a.id}>
-                  <input type="hidden" name="alumno" value={a.id} />
-                  <div className="flex min-h-12 items-center gap-3 px-3 py-2">
-                    <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
-                      <input
-                        type="checkbox"
-                        name="presente"
-                        value={a.id}
-                        checked={presentes.has(a.id)}
-                        onChange={() => alternar(presentes, setPresentes, a.id)}
-                        className="size-5 shrink-0 accent-[var(--acento)]"
-                      />
-                      <Avatar nombre={a.nombre} tam={28} />
-                      <span className="truncate">{a.nombre}</span>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const n = new Set(abiertas);
-                        if (n.has(a.id)) n.delete(a.id);
-                        else n.add(a.id);
-                        setAbiertas(n);
-                      }}
-                      aria-expanded={abierta}
-                      aria-label={tieneNota ? `Observación de ${a.nombre}` : `Agregar observación sobre ${a.nombre}`}
-                      className={`flex size-9 shrink-0 items-center justify-center rounded-full transition-colors ${
-                        tieneNota ? "text-acento" : "text-suave hover:text-texto"
-                      }`}
-                    >
-                      <Icono size={18} aria-hidden />
-                    </button>
-                  </div>
-                  {abierta && (
-                    <div className="aparecer px-3 pb-3">
-                      <textarea
-                        name={`nota_${a.id}`}
-                        rows={2}
-                        value={nota}
-                        onChange={(e) => setNotas({ ...notas, [a.id]: e.target.value })}
-                        placeholder={`Algo sobre ${a.nombre.split(" ")[0]}…`}
-                        className="campo text-sm"
-                        maxLength={500}
-                      />
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+          <div className="divide-y divide-borde rounded-[12px] border border-borde">
+            <div className="grid grid-cols-[1fr_auto_auto] items-center gap-4 px-3 py-1.5 text-xs font-medium text-suave">
+              <span>Tema</span>
+              <span className="w-14 text-center">Plan</span>
+              <span className="w-14 text-center">Hecho</span>
+            </div>
+            {temas.map((t) => (
+              <div key={t.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-4 px-3">
+                <span className="py-2.5">{t.nombre}</span>
+                <label className="flex h-11 w-14 cursor-pointer items-center justify-center">
+                  <input type="checkbox" name="temaPlan" aria-label={`${t.nombre}: planificado`} value={t.id} checked={temasPlan.has(t.id)} onChange={() => alternar(temasPlan, setTemasPlan, t.id)} className="size-5 accent-[var(--acento)]" />
+                </label>
+                <label className="flex h-11 w-14 cursor-pointer items-center justify-center">
+                  <input type="checkbox" name="temaHecho" aria-label={`${t.nombre}: realizado`} value={t.id} checked={temasHecho.has(t.id)} onChange={() => alternar(temasHecho, setTemasHecho, t.id)} className="size-5 accent-[var(--acento)]" />
+                </label>
+              </div>
+            ))}
+          </div>
         )}
-      </section>
+      </fieldset>
+    </section>
+  );
 
-      <section className="caja p-4">
-        <label htmlFor="resumen" className="etiqueta">Cómo salió / observaciones</label>
-        <textarea id="resumen" name="resumen" rows={3} value={resumen} onChange={(e) => setResumen(e.target.value)} className="campo" placeholder="Qué funcionó, qué hay que repetir…" />
-      </section>
+  const seccionResumen = (
+    <section className="caja p-4">
+      <label htmlFor="resumen" className="etiqueta">Cómo salió / observaciones</label>
+      <textarea id="resumen" name="resumen" rows={3} value={resumen} onChange={(e) => setResumen(e.target.value)} className="campo" placeholder="Qué funcionó, qué hay que repetir…" />
+    </section>
+  );
+
+  return (
+    <form action={enviar} className="space-y-5">
+      {/* Orden pensado para el día del entrenamiento:
+          1) Horarios (lo primero que se completa al volver del agua)
+          2) Asistencia (quiénes vinieron, con observación por chico)
+          3) Plan y temas (lo que se piensa + lo que terminó haciéndose)
+          4) Cómo salió (observaciones generales del grupo) */}
+      {seccionEnElAgua}
+      {seccionAsistencia}
+      {seccionPlanYTemas}
+      {seccionResumen}
 
       {estado.error && <p role="alert" className="confirmar text-sm text-peligro">{estado.error}</p>}
       {estado.guardado && (
