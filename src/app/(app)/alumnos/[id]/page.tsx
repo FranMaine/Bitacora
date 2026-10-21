@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft, Check, X, MessageSquareText } from "lucide-react";
+import { LogoClase } from "@/components/logo-clase";
 import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
 import { deFechaDB, fechaCorta, nombrePeriodo, periodoActual, periodoCorto } from "@/lib/fechas";
@@ -41,7 +42,10 @@ export default async function FichaAlumno({ params }: { params: Promise<{ id: st
           <ChevronLeft size={16} aria-hidden /> Alumnos
         </Link>
         <h1 className="display mt-2 text-3xl sm:text-4xl">{alumno.nombre}</h1>
-        <p className="text-suave">
+        <p className="mt-1 flex items-center gap-1.5 text-suave">
+          <span className="flex size-5 items-center justify-center rounded-[6px] bg-acento-suave text-acento" aria-hidden>
+            <LogoClase nombre={alumno.categoria.nombre} tam={14} />
+          </span>
           {alumno.categoria.nombre}
           {!alumno.activo && " · archivado"}
         </p>

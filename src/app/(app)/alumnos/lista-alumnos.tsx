@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ChevronRight, Search } from "lucide-react";
 import { Avatar } from "@/components/avatar";
+import { LogoClase } from "@/components/logo-clase";
 
 export type Fila = { id: string; nombre: string; faltasSeguidas: number };
 export type Grupo = { id: string; nombre: string; alumnos: Fila[] };
@@ -45,7 +46,10 @@ export function ListaAlumnos({ grupos }: { grupos: Grupo[] }) {
       ) : (
         filtrados.map((g) => (
           <section key={g.id}>
-            <h2 className="mb-2 flex items-baseline gap-2 font-semibold">
+            <h2 className="mb-2 flex items-center gap-2 font-semibold">
+              <span className="flex size-7 items-center justify-center rounded-md bg-acento-suave text-acento" aria-hidden>
+                <LogoClase nombre={g.nombre} tam={20} />
+              </span>
               {g.nombre} <span className="text-sm font-normal text-suave">{g.alumnos.length}</span>
             </h2>
             <ul className="caja divide-y divide-borde">

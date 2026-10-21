@@ -9,7 +9,9 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const logueado = (await leerToken(request.cookies.get(COOKIE_SESION)?.value)) !== null;
 
-  if (pathname === "/login") {
+  // Páginas públicas: login y registro (cualquiera con el link puede crearse una
+  // cuenta de instructor — no hay registro abierto a los chicos).
+  if (pathname === "/login" || pathname === "/registro") {
     return logueado ? NextResponse.redirect(new URL("/", request.url)) : NextResponse.next();
   }
   if (!logueado) return NextResponse.redirect(new URL("/login", request.url));

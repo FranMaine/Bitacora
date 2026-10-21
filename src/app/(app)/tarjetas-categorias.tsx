@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { formatoDuracion } from "@/lib/calculos";
+import { LogoClase } from "@/components/logo-clase";
 
 export type Estado = "realizado" | "planificado" | "sin_cargar";
 export type TarjetaCategoria = {
@@ -66,14 +67,22 @@ function Tarjeta({ fecha, categoria: c }: { fecha: string; categoria: TarjetaCat
         href={`/entrenamiento/${fecha}/${c.id}`}
         className="caja caja-link flex items-center justify-between gap-3 p-4"
       >
-        <div className="min-w-0">
-          <p className="font-semibold">{c.nombre}</p>
-          <p className="mt-0.5 text-sm text-suave">
-            {c.total} {c.total === 1 ? "alumno" : "alumnos"}
-            {c.estado === "realizado" && ` · ${c.presentes} presentes`}
-            {c.minutos !== null && ` · ${formatoDuracion(c.minutos)} en el agua`}
-          </p>
-          {c.temas.length > 0 && <p className="mt-1 truncate text-sm text-suave">{c.temas.join(", ")}</p>}
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <span
+            className="flex size-11 shrink-0 items-center justify-center rounded-[10px] bg-acento-suave text-acento"
+            aria-hidden
+          >
+            <LogoClase nombre={c.nombre} tam={30} />
+          </span>
+          <div className="min-w-0">
+            <p className="font-semibold">{c.nombre}</p>
+            <p className="mt-0.5 text-sm text-suave">
+              {c.total} {c.total === 1 ? "alumno" : "alumnos"}
+              {c.estado === "realizado" && ` · ${c.presentes} presentes`}
+              {c.minutos !== null && ` · ${formatoDuracion(c.minutos)} en el agua`}
+            </p>
+            {c.temas.length > 0 && <p className="mt-1 truncate text-sm text-suave">{c.temas.join(", ")}</p>}
+          </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <span className={`chip ${chip.clase}`}>{chip.texto}</span>

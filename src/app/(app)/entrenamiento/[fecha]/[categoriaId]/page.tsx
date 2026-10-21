@@ -4,6 +4,7 @@ import { ChevronLeft } from "lucide-react";
 import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
 import { aFechaDB, fechaLarga } from "@/lib/fechas";
+import { LogoClase } from "@/components/logo-clase";
 import { FormularioEntrenamiento } from "./formulario";
 
 export const metadata = { title: "Entrenamiento" };
@@ -46,7 +47,12 @@ export default async function PaginaEntrenamiento({ params }: { params: Promise<
         <Link href={`/?fecha=${fecha}`} className="inline-flex items-center gap-1 text-sm text-suave hover:text-texto">
           <ChevronLeft size={16} aria-hidden /> Volver
         </Link>
-        <h1 className="display mt-2 text-3xl sm:text-4xl">{categoria.nombre}</h1>
+        <div className="mt-2 flex items-center gap-3">
+          <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-acento-suave text-acento" aria-hidden>
+            <LogoClase nombre={categoria.nombre} tam={34} />
+          </span>
+          <h1 className="display text-3xl sm:text-4xl">{categoria.nombre}</h1>
+        </div>
         <p className="mt-1 text-suave first-letter:uppercase">{fechaLarga(fecha)}</p>
       </div>
       <FormularioEntrenamiento
