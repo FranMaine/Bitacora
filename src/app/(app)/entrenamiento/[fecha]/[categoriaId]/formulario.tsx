@@ -184,7 +184,7 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, in
                     </button>
                   </div>
                   {abierta && (
-                    <div className="px-3 pb-3">
+                    <div className="aparecer px-3 pb-3">
                       <textarea
                         name={`nota_${a.id}`}
                         rows={2}
@@ -208,9 +208,9 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, in
         <textarea id="resumen" name="resumen" rows={3} value={resumen} onChange={(e) => setResumen(e.target.value)} className="campo" placeholder="Qué funcionó, qué hay que repetir…" />
       </section>
 
-      {estado.error && <p role="alert" className="text-sm text-peligro">{estado.error}</p>}
+      {estado.error && <p role="alert" className="confirmar text-sm text-peligro">{estado.error}</p>}
       {estado.guardado && (
-        <p role="status" className="flex items-center gap-1.5 text-sm text-ok">
+        <p role="status" className="confirmar flex items-center gap-1.5 text-sm text-ok">
           <Check size={16} aria-hidden />
           {estado.guardado === "realizado" ? "Entrenamiento guardado como realizado." : "Plan guardado."}
         </p>

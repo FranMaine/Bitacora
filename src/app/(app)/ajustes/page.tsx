@@ -50,7 +50,7 @@ export default async function PaginaAjustes() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Ajustes</h1>
+      <h1 className="display text-3xl sm:text-4xl">Ajustes</h1>
 
       <Catalogo
         tipo="categoria"

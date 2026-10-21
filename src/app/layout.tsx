@@ -1,9 +1,16 @@
 import type { Metadata, Viewport } from "next";
-import { Geist } from "next/font/google";
+import { Geist, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { RegistrarSW } from "@/components/registrar-sw";
 
-const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+// Geist para texto; Playfair Display sólo para los H1 principales (`.display`).
+const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin"], display: "swap" });
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin"],
+  weight: ["500", "600"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: { default: "Bitácora", template: "%s · Bitácora" },
@@ -14,8 +21,7 @@ export const metadata: Metadata = {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
     apple: "/icon.svg",
   },
-  // En iOS, cuando el usuario agrega la app a pantalla de inicio, estos ajustes
-  // la abren sin barras del navegador y con el estilo oscuro de la barra de estado.
+  // iOS: al agregar a pantalla de inicio se abre sin barras y con la barra de estado oscura.
   appleWebApp: {
     capable: true,
     title: "Bitácora",
@@ -28,13 +34,13 @@ export const viewport: Viewport = {
   initialScale: 1,
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f6f7f8" },
-    { media: "(prefers-color-scheme: dark)", color: "#0d1114" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b1013" },
   ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${geist.variable} h-full antialiased`}>
+    <html lang="es" className={`${geist.variable} ${playfair.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         {children}
         <RegistrarSW />

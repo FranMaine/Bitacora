@@ -42,7 +42,7 @@ export default async function PaginaAlumnos() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Alumnos</h1>
+      <h1 className="display text-3xl sm:text-4xl">Alumnos</h1>
 
       {categorias.length > 0 ? (
         <FormularioAlta categorias={categorias.map((c) => ({ id: c.id, nombre: c.nombre }))} />

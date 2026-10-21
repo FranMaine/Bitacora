@@ -101,8 +101,8 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Estadísticas</h1>
-        <p className="text-suave">Solo cuentan los entrenamientos dados por realizados.</p>
+        <h1 className="display text-3xl sm:text-4xl">Estadísticas</h1>
+        <p className="mt-1 text-suave">Solo cuentan los entrenamientos dados por realizados.</p>
       </div>
 
       <div className="flex items-center justify-between gap-2">

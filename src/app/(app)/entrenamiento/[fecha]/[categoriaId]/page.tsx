@@ -46,8 +46,8 @@ export default async function PaginaEntrenamiento({ params }: { params: Promise<
         <Link href={`/?fecha=${fecha}`} className="inline-flex items-center gap-1 text-sm text-suave hover:text-texto">
           <ChevronLeft size={16} aria-hidden /> Volver
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">{categoria.nombre}</h1>
-        <p className="text-suave first-letter:uppercase">{fechaLarga(fecha)}</p>
+        <h1 className="display mt-2 text-3xl sm:text-4xl">{categoria.nombre}</h1>
+        <p className="mt-1 text-suave first-letter:uppercase">{fechaLarga(fecha)}</p>
       </div>
       <FormularioEntrenamiento
         fecha={fecha}

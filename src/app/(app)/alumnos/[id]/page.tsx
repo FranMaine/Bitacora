@@ -40,7 +40,7 @@ export default async function FichaAlumno({ params }: { params: Promise<{ id: st
         <Link href="/alumnos" className="inline-flex items-center gap-1 text-sm text-suave hover:text-texto">
           <ChevronLeft size={16} aria-hidden /> Alumnos
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">{alumno.nombre}</h1>
+        <h1 className="display mt-2 text-3xl sm:text-4xl">{alumno.nombre}</h1>
         <p className="text-suave">
           {alumno.categoria.nombre}
           {!alumno.activo && " · archivado"}

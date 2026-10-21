@@ -1,12 +1,14 @@
 @import "tailwindcss";
 
-/* Paleta: un solo acento (azul mar) sobre grises neutros. Un único radio de esquinas (12px) en toda la app. */
+/* Paleta: azul mar como único acento sobre neutros fríos. Un solo radio de esquinas (12px). */
 :root {
   --fondo: #f6f7f8;
   --superficie: #ffffff;
+  --superficie-elevada: #ffffff;
   --texto: #14181c;
   --texto-suave: #5b6670;
   --borde: #dfe3e7;
+  --borde-fuerte: #c6ccd3;
   --acento: #0b5f8f;
   --acento-fuerte: #084a70;
   --acento-suave: #e3f0f8;
@@ -15,23 +17,39 @@
   --alerta: #a4560b;
   --alerta-suave: #fbeedc;
   --peligro: #b4261f;
+
+  /* Elevación: sombra suave para tarjetas (sin tinta pura). */
+  --sombra-1: 0 1px 2px rgba(20, 24, 28, 0.04), 0 1px 1px rgba(20, 24, 28, 0.03);
+  --sombra-2: 0 4px 12px rgba(20, 24, 28, 0.06), 0 2px 4px rgba(20, 24, 28, 0.04);
+
+  /* Curvas y duraciones de UI — todas < 300ms. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --dur-press: 120ms;
+  --dur-hover: 160ms;
+  --dur-ui: 200ms;
+  --dur-ui-larga: 260ms;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --fondo: #0d1114;
-    --superficie: #161b20;
-    --texto: #e8ecef;
-    --texto-suave: #98a3ad;
-    --borde: #29323a;
+    --fondo: #0b1013;
+    --superficie: #141a1f;
+    --superficie-elevada: #1a2127;
+    --texto: #eaeef2;
+    --texto-suave: #96a2ac;
+    --borde: #262f36;
+    --borde-fuerte: #39434b;
     --acento: #5fb4e6;
     --acento-fuerte: #8ccbf2;
-    --acento-suave: #12303f;
+    --acento-suave: #122a37;
     --ok: #5cc88f;
-    --ok-suave: #12301f;
+    --ok-suave: #122c1e;
     --alerta: #e8a45a;
-    --alerta-suave: #34240f;
+    --alerta-suave: #322210;
     --peligro: #f08a83;
+    --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --sombra-2: 0 6px 20px rgba(0, 0, 0, 0.45);
   }
 }
 
@@ -50,6 +68,7 @@
   --color-alerta-suave: var(--alerta-suave);
   --color-peligro: var(--peligro);
   --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-display: var(--font-playfair), "Georgia", serif;
   --radius-caja: 12px;
 }
 
@@ -61,8 +80,8 @@ body {
   background: var(--fondo);
   color: var(--texto);
   font-family: var(--font-sans);
-  /* espacio para la barra inferior y la zona segura del celular */
-  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  /* Espacio para la barra inferior y la zona segura del celular. */
+  padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
 }
 
 @media (min-width: 768px) {
@@ -71,11 +90,42 @@ body {
   }
 }
 
+/* Tipografía display: usada SOLO en los H1 de cada pantalla principal, para
+   darle un carácter editorial sin perder la neutralidad de la app de datos. */
+.display {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+}
+
 @layer components {
   .caja {
     background: var(--superficie);
     border: 1px solid var(--borde);
     border-radius: var(--radius-caja);
+    box-shadow: var(--sombra-1);
+  }
+
+  /* Tarjeta clicable: hover y press propios, sin "transition: all". */
+  .caja-link {
+    transition:
+      border-color var(--dur-hover) var(--ease-out),
+      transform var(--dur-press) var(--ease-out),
+      box-shadow var(--dur-hover) var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .caja-link:hover {
+      border-color: var(--acento);
+      box-shadow: var(--sombra-2);
+    }
+  }
+  .caja-link:active {
+    transform: scale(0.985);
+  }
+  .caja-link:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 2px;
   }
 
   .campo {
@@ -86,20 +136,23 @@ body {
     color: var(--texto);
     border: 1px solid var(--borde);
     border-radius: var(--radius-caja);
-    /* 16px: iOS no hace zoom al enfocar */
+    /* 16px: iOS no hace zoom al enfocar. */
     font-size: 1rem;
+    transition: border-color var(--dur-hover) var(--ease-out), box-shadow var(--dur-hover) var(--ease-out);
   }
   .campo:focus-visible {
-    outline: 2px solid var(--acento);
-    outline-offset: 1px;
+    outline: none;
+    border-color: var(--acento);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--acento) 25%, transparent);
   }
 
   .etiqueta {
     display: block;
     margin-bottom: 0.25rem;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 500;
     color: var(--texto-suave);
+    letter-spacing: 0.01em;
   }
 
   .boton {
@@ -115,10 +168,19 @@ body {
     color: var(--texto);
     font-weight: 500;
     cursor: pointer;
-    transition: transform 120ms ease-out, background-color 120ms ease-out;
+    transition:
+      transform var(--dur-press) var(--ease-out),
+      background-color var(--dur-hover) var(--ease-out),
+      border-color var(--dur-hover) var(--ease-out),
+      color var(--dur-hover) var(--ease-out);
   }
-  .boton:active {
-    transform: scale(0.98);
+  @media (hover: hover) and (pointer: fine) {
+    .boton:hover:not(:disabled) {
+      border-color: var(--borde-fuerte);
+    }
+  }
+  .boton:active:not(:disabled) {
+    transform: scale(0.97);
   }
   .boton:focus-visible {
     outline: 2px solid var(--acento);
@@ -132,15 +194,18 @@ body {
     background: var(--acento);
     border-color: var(--acento);
     color: #fff;
+    box-shadow: var(--sombra-1);
   }
   @media (prefers-color-scheme: dark) {
     .boton-primario {
       color: #06202e;
     }
   }
-  .boton-primario:hover:not(:disabled) {
-    background: var(--acento-fuerte);
-    border-color: var(--acento-fuerte);
+  @media (hover: hover) and (pointer: fine) {
+    .boton-primario:hover:not(:disabled) {
+      background: var(--acento-fuerte);
+      border-color: var(--acento-fuerte);
+    }
   }
   .boton-peligro {
     color: var(--peligro);
@@ -173,11 +238,35 @@ body {
       color: hsl(var(--h) 70% 78%);
     }
   }
+
+  /* Aparición desde abajo + fade: para el textarea de observación del alumno
+     (ocasional, usuario que lo abre a propósito). */
+  .aparecer {
+    animation: aparecer var(--dur-ui) var(--ease-out) both;
+  }
+  /* Confirmación "Guardado": muy sutil, para feedback de acción. */
+  .confirmar {
+    animation: confirmar var(--dur-ui-larga) var(--ease-out) both;
+  }
+}
+
+@keyframes aparecer {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes confirmar {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * {
-    transition-duration: 0.01ms !important;
+  /* No apagamos todo: dejamos cambios de color y opacity suaves,
+     pero quitamos movimiento. */
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

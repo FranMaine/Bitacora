@@ -30,8 +30,12 @@ export default async function PaginaHoy({ searchParams }: { searchParams: Promis
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-sm text-suave">{fecha === hoy ? "Hoy" : "Día elegido"}</p>
-        <h1 className="text-2xl font-semibold first-letter:uppercase tracking-tight">{fechaLarga(fecha)}</h1>
+        <p className="text-xs font-medium uppercase tracking-[0.14em] text-suave">
+          {fecha === hoy ? "Hoy" : "Día"}
+        </p>
+        <h1 className="display mt-1 text-3xl text-balance first-letter:uppercase sm:text-4xl">
+          {fechaLarga(fecha)}
+        </h1>
         <div className="mt-3 flex items-center gap-2">
           <Link href={`/?fecha=${sumarDias(fecha, -1)}`} className="boton" aria-label="Día anterior">
             <ChevronLeft size={18} aria-hidden />

@@ -64,7 +64,7 @@ function Tarjeta({ fecha, categoria: c }: { fecha: string; categoria: TarjetaCat
     <li>
       <Link
         href={`/entrenamiento/${fecha}/${c.id}`}
-        className="caja flex items-center justify-between gap-3 p-4 transition-colors hover:border-acento"
+        className="caja caja-link flex items-center justify-between gap-3 p-4"
       >
         <div className="min-w-0">
           <p className="font-semibold">{c.nombre}</p>

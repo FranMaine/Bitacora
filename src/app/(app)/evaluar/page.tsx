@@ -30,8 +30,8 @@ export default async function PaginaEvaluar({ searchParams }: { searchParams: Pr
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Evaluar</h1>
-        <p className="text-suave">Una nota del 1 al 10 por criterio, una vez por mes.</p>
+        <h1 className="display text-3xl sm:text-4xl">Evaluar</h1>
+        <p className="mt-1 text-suave">Una nota del 1 al 10 por criterio, una vez por mes.</p>
       </div>
 
       <div className="flex items-center justify-between gap-2">
@@ -44,18 +44,24 @@ export default async function PaginaEvaluar({ searchParams }: { searchParams: Pr
         </Link>
       </div>
 
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" role="tablist" aria-label="Categoría">
-        {categorias.map((c) => (
-          <Link
-            key={c.id}
-            href={enlace(periodo, c.id)}
-            role="tab"
-            aria-selected={c.id === categoriaId}
-            className="boton shrink-0 aria-selected:border-acento aria-selected:bg-acento-suave aria-selected:text-acento"
-          >
-            {c.nombre}
-          </Link>
-        ))}
+      <div className="-mx-4 overflow-x-auto px-4 pb-1" role="tablist" aria-label="Categoría">
+        <div className="relative flex gap-6 border-b border-borde">
+          {categorias.map((c) => (
+            <Link
+              key={c.id}
+              href={enlace(periodo, c.id)}
+              role="tab"
+              aria-selected={c.id === categoriaId}
+              className="group shrink-0 whitespace-nowrap px-1 py-2.5 text-sm font-medium text-suave transition-colors duration-[160ms] aria-selected:text-acento hover:text-texto aria-selected:hover:text-acento"
+            >
+              {c.nombre}
+              <span
+                aria-hidden
+                className="pointer-events-none mt-2 block h-[2px] origin-left scale-x-0 bg-acento transition-transform duration-[220ms] ease-[cubic-bezier(0.23,1,0.32,1)] group-aria-selected:scale-x-100"
+              />
+            </Link>
+          ))}
+        </div>
       </div>
 
       {categoriaId && (
