@@ -19,7 +19,7 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
       <header className="sticky top-0 z-30 border-b border-borde bg-superficie/90 backdrop-blur-md supports-[backdrop-filter]:bg-superficie/75">
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between gap-3 px-4">
           <Link href="/" className="flex items-center gap-2 text-base font-semibold tracking-tight sm:text-lg">
-            <Image src="/cvsi.webp" alt="CVSI" width={28} height={28} className="size-7 rounded-md" priority />
+            <Image src="/cvsi.webp" alt="CVSI" width={400} height={207} className="h-7 w-auto" priority />
             Bitácora
           </Link>
           <Navegacion variante="superior" />

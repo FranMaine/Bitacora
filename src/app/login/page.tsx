@@ -9,7 +9,7 @@ export default function PaginaLogin() {
   return (
     <main className="flex min-h-[100dvh] items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm">
-        <Image src="/cvsi.webp" alt="CVSI" width={56} height={56} className="size-14 rounded-xl" priority />
+        <Image src="/cvsi.webp" alt="CVSI" width={400} height={207} className="h-14 w-auto" priority />
         <h1 className="display mt-4 text-4xl">Bitácora</h1>
         <p className="mt-2 text-suave">Entrenamientos, asistencia y evaluaciones. Solo para instructores.</p>
         <FormularioLogin />
