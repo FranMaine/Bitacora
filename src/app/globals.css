@@ -1,0 +1,166 @@
+@import "tailwindcss";
+
+/* Paleta: un solo acento (azul mar) sobre grises neutros. Un único radio de esquinas (12px) en toda la app. */
+:root {
+  --fondo: #f6f7f8;
+  --superficie: #ffffff;
+  --texto: #14181c;
+  --texto-suave: #5b6670;
+  --borde: #dfe3e7;
+  --acento: #0b5f8f;
+  --acento-fuerte: #084a70;
+  --acento-suave: #e3f0f8;
+  --ok: #1d7a4a;
+  --ok-suave: #e2f3ea;
+  --alerta: #a4560b;
+  --alerta-suave: #fbeedc;
+  --peligro: #b4261f;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #0d1114;
+    --superficie: #161b20;
+    --texto: #e8ecef;
+    --texto-suave: #98a3ad;
+    --borde: #29323a;
+    --acento: #5fb4e6;
+    --acento-fuerte: #8ccbf2;
+    --acento-suave: #12303f;
+    --ok: #5cc88f;
+    --ok-suave: #12301f;
+    --alerta: #e8a45a;
+    --alerta-suave: #34240f;
+    --peligro: #f08a83;
+  }
+}
+
+@theme inline {
+  --color-fondo: var(--fondo);
+  --color-superficie: var(--superficie);
+  --color-texto: var(--texto);
+  --color-suave: var(--texto-suave);
+  --color-borde: var(--borde);
+  --color-acento: var(--acento);
+  --color-acento-fuerte: var(--acento-fuerte);
+  --color-acento-suave: var(--acento-suave);
+  --color-ok: var(--ok);
+  --color-ok-suave: var(--ok-suave);
+  --color-alerta: var(--alerta);
+  --color-alerta-suave: var(--alerta-suave);
+  --color-peligro: var(--peligro);
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --radius-caja: 12px;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: var(--font-sans);
+  /* espacio para la barra inferior y la zona segura del celular */
+  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 768px) {
+  body {
+    padding-bottom: 0;
+  }
+}
+
+@layer components {
+  .caja {
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: var(--radius-caja);
+  }
+
+  .campo {
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--superficie);
+    color: var(--texto);
+    border: 1px solid var(--borde);
+    border-radius: var(--radius-caja);
+    /* 16px: iOS no hace zoom al enfocar */
+    font-size: 1rem;
+  }
+  .campo:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 1px;
+  }
+
+  .etiqueta {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--texto-suave);
+  }
+
+  .boton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-caja);
+    border: 1px solid var(--borde);
+    background: var(--superficie);
+    color: var(--texto);
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 120ms ease-out, background-color 120ms ease-out;
+  }
+  .boton:active {
+    transform: scale(0.98);
+  }
+  .boton:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 2px;
+  }
+  .boton:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  .boton-primario {
+    background: var(--acento);
+    border-color: var(--acento);
+    color: #fff;
+  }
+  @media (prefers-color-scheme: dark) {
+    .boton-primario {
+      color: #06202e;
+    }
+  }
+  .boton-primario:hover:not(:disabled) {
+    background: var(--acento-fuerte);
+    border-color: var(--acento-fuerte);
+  }
+  .boton-peligro {
+    color: var(--peligro);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.625rem;
+    border-radius: 999px;
+    background: var(--acento-suave);
+    color: var(--acento);
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

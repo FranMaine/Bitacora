@@ -1,0 +1,146 @@
+// Bitácora: seguimiento de entrenamientos del CVSI. Solo hay instructores (sin roles):
+// todos ven todos los grupos, y los alumnos no tienen acceso.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Instructor {
+  id           String   @id @default(cuid())
+  nombre       String
+  email        String   @unique
+  passwordHash String
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  entrenamientos Entrenamiento[]
+  evaluaciones   Evaluacion[]
+}
+
+// Grupo de alumnos (se distinguen por categoría): "Optimist Principiantes", "ILCA 4"...
+model Categoria {
+  id     String  @id @default(cuid())
+  nombre String  @unique
+  orden  Int     @default(0)
+  activa Boolean @default(true)
+
+  alumnos        Alumno[]
+  entrenamientos Entrenamiento[]
+}
+
+model Alumno {
+  id          String   @id @default(cuid())
+  nombre      String
+  categoriaId String
+  categoria   Categoria @relation(fields: [categoriaId], references: [id])
+  activo      Boolean  @default(true)
+  // Notas privadas de los instructores sobre el alumno.
+  notas       String?
+  createdAt   DateTime @default(now())
+
+  asistencias  Asistencia[]
+  evaluaciones Evaluacion[]
+
+  @@index([categoriaId])
+}
+
+// Catálogo de temas que se entrenan: ceñida, popa, largadas, virada...
+model Tema {
+  id     String  @id @default(cuid())
+  nombre String  @unique
+  orden  Int     @default(0)
+  activo Boolean @default(true)
+
+  entrenamientos EntrenamientoTema[]
+}
+
+// Catálogo de ítems que se califican (1 a 10) en la evaluación mensual.
+model Criterio {
+  id     String  @id @default(cuid())
+  nombre String  @unique
+  orden  Int     @default(0)
+  activo Boolean @default(true)
+
+  items EvaluacionItem[]
+}
+
+// Un entrenamiento por día y categoría. Sirve para planificarlo antes ("plan" y
+// los temas planificados) y completarlo después (horarios, asistencia, temas
+// realizados, resumen).
+model Entrenamiento {
+  id          String    @id @default(cuid())
+  fecha       DateTime  @db.Date
+  categoriaId String
+  categoria   Categoria @relation(fields: [categoriaId], references: [id])
+  // "HH:mm" (hora de Argentina). Con ambos se calculan las horas en el agua.
+  horaBajada  String?
+  horaRegreso String?
+  plan        String?
+  resumen     String?
+  // false = solo el plan cargado de antemano; true = el entrenamiento ya se hizo
+  // (recién ahí cuentan la asistencia, las horas y los temas en las estadísticas).
+  realizado   Boolean   @default(false)
+  creadoPorId String
+  creadoPor   Instructor @relation(fields: [creadoPorId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  temas       EntrenamientoTema[]
+  asistencias Asistencia[]
+
+  @@unique([fecha, categoriaId])
+  @@index([fecha])
+}
+
+model EntrenamientoTema {
+  entrenamientoId String
+  entrenamiento   Entrenamiento @relation(fields: [entrenamientoId], references: [id], onDelete: Cascade)
+  temaId          String
+  tema            Tema          @relation(fields: [temaId], references: [id])
+  planificado     Boolean       @default(false)
+  realizado       Boolean       @default(false)
+
+  @@id([entrenamientoId, temaId])
+}
+
+model Asistencia {
+  entrenamientoId String
+  entrenamiento   Entrenamiento @relation(fields: [entrenamientoId], references: [id], onDelete: Cascade)
+  alumnoId        String
+  alumno          Alumno        @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+  presente        Boolean       @default(true)
+
+  @@id([entrenamientoId, alumnoId])
+  @@index([alumnoId])
+}
+
+// Una evaluación por alumno y mes ("2026-10"), compartida entre instructores
+// (queda registrado quién la editó por última vez).
+model Evaluacion {
+  id           String     @id @default(cuid())
+  alumnoId     String
+  alumno       Alumno     @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+  periodo      String
+  comentario   String?
+  instructorId String
+  instructor   Instructor @relation(fields: [instructorId], references: [id])
+  updatedAt    DateTime   @updatedAt
+
+  items EvaluacionItem[]
+
+  @@unique([alumnoId, periodo])
+}
+
+model EvaluacionItem {
+  evaluacionId String
+  evaluacion   Evaluacion @relation(fields: [evaluacionId], references: [id], onDelete: Cascade)
+  criterioId   String
+  criterio     Criterio   @relation(fields: [criterioId], references: [id])
+  valor        Int
+
+  @@id([evaluacionId, criterioId])
+}
