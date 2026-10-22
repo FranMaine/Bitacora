@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { minutosEntre, formatoDuracion, porcentaje, promedio, formatoNota, rachaAusencias, barras, diasEntre, horaValida } from "../calculos";
+import { minutosEntre, formatoDuracion, porcentaje, promedio, formatoNota, rachaAusencias, barras, diasEntre, horaValida, textoViento, direccionVientoValida, tendencia, formatoTendencia } from "../calculos";
 import { hoyAR, aFechaDB, sumarDias, periodoAnterior, periodoSiguiente, periodoCorto, nombrePeriodo, fechaLarga } from "../fechas";
 
 describe("minutosEntre", () => {
@@ -81,5 +81,27 @@ describe("fechas", () => {
     expect(periodoCorto("2026-10")).toBe("oct 26");
     expect(nombrePeriodo("2026-10")).toBe("octubre 2026");
     expect(fechaLarga("2026-10-24")).toBe("sábado, 24 de octubre");
+  });
+});
+
+describe("viento y tendencia", () => {
+  it("textoViento arma el texto con lo que haya", () => {
+    expect(textoViento("SE", 12)).toBe("SE 12 kn");
+    expect(textoViento("SE", null)).toBe("SE");
+    expect(textoViento(null, 8)).toBe("8 kn");
+    expect(textoViento(null, null)).toBeNull();
+    expect(textoViento("", 0)).toBe("0 kn");
+  });
+  it("direccionVientoValida", () => {
+    expect(direccionVientoValida("NO")).toBe(true);
+    expect(direccionVientoValida("X")).toBe(false);
+  });
+  it("tendencia compara las dos últimas notas", () => {
+    expect(tendencia([6])).toBeNull();
+    expect(tendencia([6, 7.5])).toBe(1.5);
+    expect(formatoTendencia(1.5)).toBe("+1,5");
+    expect(formatoTendencia(-0.5)).toBe("−0,5");
+    expect(formatoTendencia(0)).toBe("=");
+    expect(formatoTendencia(null)).toBeNull();
   });
 });

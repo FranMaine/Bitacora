@@ -1,13 +1,25 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Wind } from "lucide-react";
 import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
 import { deFechaDB, fechaCorta, hoyAR, nombrePeriodo, periodoActual, periodoAnterior, periodoDe, periodoSiguiente, periodoValido } from "@/lib/fechas";
-import { barras, diasEntre, formatoDuracion, formatoNota, porcentaje, promedio, rachaAusencias } from "@/lib/calculos";
+import {
+  barras,
+  diasEntre,
+  formatoDuracion,
+  formatoNota,
+  formatoTendencia,
+  minutosEntre,
+  porcentaje,
+  promedio,
+  rachaAusencias,
+  tendencia,
+} from "@/lib/calculos";
 import { resumir } from "@/lib/estadisticas";
+import { Avatar } from "@/components/avatar";
+import { LogoClase } from "@/components/logo-clase";
 
 export const metadata = { title: "Estadísticas" };
-
 
 function Barra({ ancho, color = "bg-acento" }: { ancho: number; color?: string }) {
   return (
@@ -17,15 +29,21 @@ function Barra({ ancho, color = "bg-acento" }: { ancho: number; color?: string }
   );
 }
 
-export default async function PaginaEstadisticas({ searchParams }: { searchParams: Promise<{ mes?: string }> }) {
+function Delta({ valor }: { valor: number | null }) {
+  const t = formatoTendencia(valor);
+  if (!t || t === "=") return null;
+  return <span className={`text-xs font-medium ${t.startsWith("+") ? "text-ok" : "text-peligro"}`}>{t}</span>;
+}
+
+export default async function PaginaEstadisticas({ searchParams }: { searchParams: Promise<{ mes?: string; categoria?: string }> }) {
   await requerirInstructor();
-  const { mes } = await searchParams;
+  const { mes, categoria: categoriaPedida } = await searchParams;
   const todo = mes === "todo";
   const periodo = mes && periodoValido(mes) ? mes : periodoActual();
   const hoy = hoyAR();
 
-  const [categorias, temas, entrenamientos, evaluaciones] = await Promise.all([
-    db.categoria.findMany({ orderBy: { orden: "asc" } }),
+  const [categorias, temas, entrenamientos, evaluaciones, alumnos] = await Promise.all([
+    db.categoria.findMany({ where: { activa: true }, orderBy: { orden: "asc" } }),
     db.tema.findMany({ where: { activo: true }, orderBy: { orden: "asc" } }),
     db.entrenamiento.findMany({
       where: { realizado: true },
@@ -35,17 +53,32 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
         categoriaId: true,
         horaBajada: true,
         horaRegreso: true,
+        vientoDir: true,
+        vientoNudos: true,
         temas: { where: { realizado: true }, select: { temaId: true } },
         asistencias: { select: { alumnoId: true, presente: true } },
       },
     }),
     db.evaluacion.findMany({
-      where: todo ? {} : { periodo },
-      select: { alumno: { select: { categoriaId: true } }, items: { select: { valor: true, criterio: { select: { id: true, nombre: true } } } } },
+      orderBy: { fecha: "asc" },
+      select: {
+        fecha: true,
+        alumnoId: true,
+        alumno: { select: { categoriaId: true } },
+        items: { select: { valor: true, criterio: { select: { id: true, nombre: true } } } },
+      },
     }),
+    db.alumno.findMany({ where: { activo: true }, orderBy: { nombre: "asc" }, select: { id: true, nombre: true, categoriaId: true } }),
   ]);
 
-  const aResumen = (e: (typeof entrenamientos)[number]) => ({
+  const categoria = categorias.find((c) => c.id === categoriaPedida) ?? null; // null = todas
+  const enCategoria = <T extends { categoriaId: string }>(x: T) => !categoria || x.categoriaId === categoria.id;
+  const nombreCat = new Map(categorias.map((c) => [c.id, c.nombre]));
+
+  // --- entrenamientos del filtro
+  const entrenos = entrenamientos.filter(enCategoria);
+  const enRango = entrenos.filter((e) => todo || periodoDe(deFechaDB(e.fecha)) === periodo);
+  const aResumen = (e: (typeof entrenos)[number]) => ({
     fecha: deFechaDB(e.fecha),
     categoriaId: e.categoriaId,
     horaBajada: e.horaBajada,
@@ -54,39 +87,28 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
     total: e.asistencias.length,
     temasHechos: e.temas.map((t) => t.temaId),
   });
-  const todos = entrenamientos.map(aResumen);
-  const enRango = todo ? todos : todos.filter((e) => periodoDe(e.fecha) === periodo);
-  const r = resumir(enRango);
-  // "Cuándo fue la última vez" mira todo el historial, no solo el mes elegido.
-  const historial = resumir(todos);
+  const r = resumir(enRango.map(aResumen));
+  // "Cuándo fue la última vez" mira todo el historial de la categoría, no solo el mes elegido.
+  const historial = resumir(entrenos.map(aResumen));
 
-  const nombreCat = new Map(categorias.map((c) => [c.id, c.nombre]));
-  const filasTemas = barras(temas.map((t) => ({ id: t.id, nombre: t.nombre, valor: r.temas.get(t.id)?.veces ?? 0, ultima: historial.temas.get(t.id)?.ultima ?? null })));
+  // --- viento
+  const nudos = enRango.map((e) => e.vientoNudos).filter((n): n is number => n !== null);
+  const vientoProm = promedio(nudos);
+  const porDireccion = new Map<string, number>();
+  for (const e of enRango) if (e.vientoDir) porDireccion.set(e.vientoDir, (porDireccion.get(e.vientoDir) ?? 0) + 1);
+  const direcciones = [...porDireccion.entries()].sort((a, b) => b[1] - a[1]);
 
-  // Alumnos con faltas seguidas (mirando los últimos entrenamientos de su categoría).
-  const presenciasPorAlumno = new Map<string, boolean[]>(); // entrenamientos ya vienen del más nuevo al más viejo
-  for (const e of entrenamientos) {
-    for (const a of e.asistencias) {
-      const lista = presenciasPorAlumno.get(a.alumnoId) ?? [];
-      lista.push(a.presente);
-      presenciasPorAlumno.set(a.alumnoId, lista);
-    }
-  }
-  const conFaltas = [...presenciasPorAlumno.entries()]
-    .map(([alumnoId, p]) => ({ alumnoId, racha: rachaAusencias(p) }))
-    .filter((x) => x.racha >= 2)
-    .sort((a, b) => b.racha - a.racha);
-  const alumnosConFaltas = conFaltas.length
-    ? await db.alumno.findMany({ where: { id: { in: conFaltas.map((x) => x.alumnoId) }, activo: true }, select: { id: true, nombre: true, categoriaId: true } })
-    : [];
-  const faltas = conFaltas.flatMap((x) => {
-    const a = alumnosConFaltas.find((al) => al.id === x.alumnoId);
-    return a ? [{ ...a, racha: x.racha }] : [];
-  });
+  // --- temas
+  const filasTemas = barras(
+    temas.map((t) => ({ id: t.id, nombre: t.nombre, valor: r.temas.get(t.id)?.veces ?? 0, ultima: historial.temas.get(t.id)?.ultima ?? null })),
+  );
 
-  // Notas: promedio por criterio en el período elegido.
+  // --- evaluaciones del filtro (por la fecha en que se hicieron)
+  const evalsFiltro = evaluaciones.filter(
+    (e) => (!categoria || e.alumno.categoriaId === categoria.id) && (todo || periodoDe(deFechaDB(e.fecha)) === periodo),
+  );
   const porCriterio = new Map<string, { nombre: string; valores: number[] }>();
-  for (const ev of evaluaciones) {
+  for (const ev of evalsFiltro) {
     for (const it of ev.items) {
       const f = porCriterio.get(it.criterio.id) ?? { nombre: it.criterio.nombre, valores: [] };
       f.valores.push(it.valor);
@@ -95,8 +117,61 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
   }
   const notas = [...porCriterio.values()].map((f) => ({ nombre: f.nombre, promedio: promedio(f.valores)! })).sort((a, b) => b.promedio - a.promedio);
 
-  const enlace = (p: string) => `/estadisticas?mes=${p}`;
-  const maxMin = Math.max(0, ...[...r.porCategoria.values()].map((c) => c.minutos));
+  // --- por alumno (las asistencias vienen de la más nueva a la más vieja)
+  const alumnosFiltro = alumnos.filter(enCategoria);
+  const presenciasPorAlumno = new Map<string, boolean[]>();
+  for (const e of entrenos) {
+    for (const a of e.asistencias) {
+      const l = presenciasPorAlumno.get(a.alumnoId) ?? [];
+      l.push(a.presente);
+      presenciasPorAlumno.set(a.alumnoId, l);
+    }
+  }
+  const statsAlumno = new Map<string, { presentes: number; total: number; minutos: number }>();
+  for (const e of enRango) {
+    const m = minutosEntre(e.horaBajada, e.horaRegreso) ?? 0;
+    for (const a of e.asistencias) {
+      const f = statsAlumno.get(a.alumnoId) ?? { presentes: 0, total: 0, minutos: 0 };
+      f.total += 1;
+      if (a.presente) {
+        f.presentes += 1;
+        f.minutos += m;
+      }
+      statsAlumno.set(a.alumnoId, f);
+    }
+  }
+  const notasPorAlumno = new Map<string, number[]>(); // promedio de cada evaluación, de la más vieja a la más nueva
+  for (const ev of evaluaciones) {
+    const p = promedio(ev.items.map((i) => i.valor));
+    if (p === null) continue;
+    const l = notasPorAlumno.get(ev.alumnoId) ?? [];
+    l.push(p);
+    notasPorAlumno.set(ev.alumnoId, l);
+  }
+  const faltas = alumnosFiltro
+    .map((a) => ({ ...a, racha: rachaAusencias(presenciasPorAlumno.get(a.id) ?? []) }))
+    .filter((a) => a.racha >= 2)
+    .sort((a, b) => b.racha - a.racha);
+
+  // --- comparación entre categorías (solo cuando se mira "Todas")
+  const comparacion = categorias
+    .map((c) => {
+      const es = enRango.filter((e) => e.categoriaId === c.id);
+      const res = resumir(es.map(aResumen)).porCategoria.get(c.id);
+      const n = es.map((e) => e.vientoNudos).filter((x): x is number => x !== null);
+      const notasCat = evalsFiltro.filter((e) => e.alumno.categoriaId === c.id).map((e) => promedio(e.items.map((i) => i.valor))).filter((x): x is number => x !== null);
+      return { c, res, viento: promedio(n), nota: promedio(notasCat) };
+    })
+    .filter((x) => x.res);
+  const maxMin = Math.max(0, ...comparacion.map((x) => x.res!.minutos));
+
+  const q = (p: { mes?: string; categoria?: string | null }) => {
+    const parametros = new URLSearchParams();
+    parametros.set("mes", p.mes ?? (todo ? "todo" : periodo));
+    const cat = p.categoria === undefined ? categoria?.id : p.categoria;
+    if (cat) parametros.set("categoria", cat);
+    return `/estadisticas?${parametros.toString()}`;
+  };
 
   return (
     <div className="space-y-6">
@@ -105,20 +180,43 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
         <p className="mt-1 text-suave">Solo cuentan los entrenamientos dados por realizados.</p>
       </div>
 
+      <div className="-mx-4 overflow-x-auto px-4 pb-1" role="tablist" aria-label="Categoría">
+        <div className="flex gap-6 border-b border-borde">
+          {[{ id: null as string | null, nombre: "Todas" }, ...categorias].map((c) => {
+            const activa = (c.id ?? null) === (categoria?.id ?? null);
+            return (
+              <Link
+                key={c.id ?? "todas"}
+                href={q({ categoria: c.id })}
+                role="tab"
+                aria-selected={activa}
+                className="group shrink-0 whitespace-nowrap px-1 py-2.5 text-sm font-medium text-suave transition-colors duration-[160ms] aria-selected:text-acento hover:text-texto aria-selected:hover:text-acento"
+              >
+                {c.nombre}
+                <span
+                  aria-hidden
+                  className="pointer-events-none mt-2 block h-[2px] origin-left scale-x-0 bg-acento transition-transform duration-[220ms] ease-[cubic-bezier(0.23,1,0.32,1)] group-aria-selected:scale-x-100"
+                />
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="flex items-center justify-between gap-2">
-        <Link href={enlace(periodoAnterior(periodo))} className="boton" aria-label="Mes anterior"><ChevronLeft size={18} aria-hidden /></Link>
+        <Link href={q({ mes: periodoAnterior(periodo) })} className="boton" aria-label="Mes anterior"><ChevronLeft size={18} aria-hidden /></Link>
         <div className="text-center">
           <p className="font-semibold first-letter:uppercase">{todo ? "Todo el historial" : nombrePeriodo(periodo)}</p>
-          <Link href={todo ? enlace(periodoActual()) : "/estadisticas?mes=todo"} className="text-sm text-acento underline underline-offset-4">
+          <Link href={q({ mes: todo ? periodoActual() : "todo" })} className="text-sm text-acento underline underline-offset-4">
             {todo ? "Ver por mes" : "Ver todo"}
           </Link>
         </div>
-        <Link href={enlace(periodoSiguiente(periodo))} className="boton" aria-label="Mes siguiente"><ChevronRight size={18} aria-hidden /></Link>
+        <Link href={q({ mes: periodoSiguiente(periodo) })} className="boton" aria-label="Mes siguiente"><ChevronRight size={18} aria-hidden /></Link>
       </div>
 
-      <section className="grid grid-cols-3 gap-3">
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="caja p-3">
-          <p className="text-xs text-suave">Entrenamientos</p>
+          <p className="text-xs text-suave">Salidas</p>
           <p className="text-xl font-semibold">{r.cantidad}</p>
         </div>
         <div className="caja p-3">
@@ -129,26 +227,94 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
           <p className="text-xs text-suave">Asistencia</p>
           <p className="text-xl font-semibold">{r.asistenciaPct === null ? "—" : `${r.asistenciaPct}%`}</p>
         </div>
+        <div className="caja p-3">
+          <p className="text-xs text-suave">Viento medio</p>
+          <p className="text-xl font-semibold">{vientoProm === null ? "—" : `${formatoNota(vientoProm)} kn`}</p>
+        </div>
       </section>
 
-      <section className="caja space-y-4 p-4">
-        <h2 className="font-semibold">Horas en el agua por categoría</h2>
-        {r.porCategoria.size === 0 ? (
-          <p className="text-sm text-suave">No hay entrenamientos realizados en este período.</p>
-        ) : (
-          [...r.porCategoria.entries()].sort((a, b) => b[1].minutos - a[1].minutos).map(([id, c]) => (
-            <div key={id} className="space-y-1.5">
-              <div className="flex items-baseline justify-between gap-3 text-sm">
-                <span className="font-medium">{nombreCat.get(id) ?? "—"}</span>
-                <span className="text-suave">
-                  {c.minutos ? formatoDuracion(c.minutos) : "sin horarios"} · {c.cantidad} {c.cantidad === 1 ? "salida" : "salidas"} · asist. {porcentaje(c.presentes, c.total) ?? "—"}%
-                </span>
-              </div>
-              <Barra ancho={maxMin ? Math.round((c.minutos / maxMin) * 100) : 0} />
-            </div>
-          ))
-        )}
-      </section>
+      {!categoria && (
+        <section className="caja space-y-4 p-4">
+          <h2 className="font-semibold">Por categoría</h2>
+          {comparacion.length === 0 ? (
+            <p className="text-sm text-suave">No hay entrenamientos realizados en este período.</p>
+          ) : (
+            comparacion
+              .sort((a, b) => b.res!.minutos - a.res!.minutos)
+              .map(({ c, res, viento, nota }) => (
+                <Link key={c.id} href={q({ categoria: c.id })} className="block space-y-1.5 rounded-[12px] transition-colors hover:text-acento">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="flex items-center gap-2 font-medium">
+                      <LogoClase nombre={c.nombre} tam={22} /> {c.nombre}
+                    </span>
+                    <span className="text-sm text-suave">
+                      {res!.cantidad} {res!.cantidad === 1 ? "salida" : "salidas"}
+                    </span>
+                  </div>
+                  <Barra ancho={maxMin ? Math.round((res!.minutos / maxMin) * 100) : 0} />
+                  <p className="text-xs text-suave">
+                    {res!.minutos ? formatoDuracion(res!.minutos) : "sin horarios"} · asistencia {porcentaje(res!.presentes, res!.total) ?? "—"}%
+                    {viento !== null && ` · viento ${formatoNota(viento)} kn`}
+                    {nota !== null && ` · nota ${formatoNota(nota)}`}
+                  </p>
+                </Link>
+              ))
+          )}
+        </section>
+      )}
+
+      {direcciones.length > 0 && (
+        <section className="caja space-y-3 p-4">
+          <h2 className="flex items-center gap-1.5 font-semibold">
+            <Wind size={16} aria-hidden /> Viento en las salidas
+          </h2>
+          <p className="text-sm text-suave">De dónde sopló más seguido{vientoProm !== null && `, con ${formatoNota(vientoProm)} nudos de media`}.</p>
+          <ul className="flex flex-wrap gap-2">
+            {direcciones.map(([dir, veces]) => (
+              <li key={dir} className="chip">
+                {dir} · {veces} {veces === 1 ? "vez" : "veces"}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {categoria && (
+        <section className="caja space-y-1 p-4">
+          <h2 className="mb-1 flex items-center gap-2 font-semibold">
+            <LogoClase nombre={categoria.nombre} tam={22} /> {categoria.nombre}: por alumno
+          </h2>
+          {alumnosFiltro.length === 0 ? (
+            <p className="text-sm text-suave">No hay alumnos en esta categoría.</p>
+          ) : (
+            <ul className="divide-y divide-borde">
+              {alumnosFiltro.map((a) => {
+                const s = statsAlumno.get(a.id);
+                const serieNotas = notasPorAlumno.get(a.id) ?? [];
+                return (
+                  <li key={a.id}>
+                    <Link href={`/alumnos/${a.id}`} className="flex items-center gap-3 py-2.5 transition-colors hover:text-acento">
+                      <Avatar nombre={a.nombre} tam={32} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{a.nombre}</p>
+                        <p className="text-xs text-suave">
+                          {s ? `${s.presentes}/${s.total} salidas · ${s.minutos ? formatoDuracion(s.minutos) : "sin horas"}` : "sin salidas en el período"}
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="flex items-baseline justify-end gap-1.5 text-sm font-semibold">
+                          <Delta valor={tendencia(serieNotas)} /> {serieNotas.length ? formatoNota(serieNotas.at(-1)!) : "—"}
+                        </p>
+                        <p className="text-xs text-suave">{s ? `${porcentaje(s.presentes, s.total)}% asist.` : ""}</p>
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      )}
 
       <section className="caja space-y-4 p-4">
         <div>

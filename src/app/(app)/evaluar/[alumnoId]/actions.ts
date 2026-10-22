@@ -1,25 +1,31 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
-import { periodoValido } from "@/lib/fechas";
+import { aFechaDB, hoyAR } from "@/lib/fechas";
 
 export type EstadoEvaluacion = { error?: string };
 
 const Nota = z.coerce.number().int().min(1).max(10);
 
+/** Crea una evaluación nueva (evaluacionId = null) o edita una existente. */
 export async function guardarEvaluacion(
   alumnoId: string,
-  periodo: string,
+  evaluacionId: string | null,
   _previo: EstadoEvaluacion,
   formData: FormData,
 ): Promise<EstadoEvaluacion> {
   const instructor = await requerirInstructor();
-  if (!periodoValido(periodo)) return { error: "Período inválido." };
-  const alumno = await db.alumno.findUnique({ where: { id: alumnoId }, select: { id: true, categoriaId: true } });
+  const alumno = await db.alumno.findUnique({ where: { id: alumnoId }, select: { id: true } });
   if (!alumno) return { error: "El alumno no existe." };
+
+  const fechaTexto = String(formData.get("fecha") ?? "");
+  const fecha = aFechaDB(fechaTexto);
+  if (!fecha) return { error: "Elegí una fecha válida." };
+  if (fechaTexto > hoyAR()) return { error: "La fecha no puede ser futura." };
 
   // Cada criterio llega como "nota_<id>"; solo se guardan los que tienen nota 1–10.
   const criterios = await db.criterio.findMany({ select: { id: true } });
@@ -36,15 +42,28 @@ export async function guardarEvaluacion(
   const comentario = String(formData.get("comentario") ?? "").trim().slice(0, 4000) || null;
 
   await db.$transaction(async (tx) => {
-    const ev = await tx.evaluacion.upsert({
-      where: { alumnoId_periodo: { alumnoId, periodo } },
-      update: { comentario, instructorId: instructor.id },
-      create: { alumnoId, periodo, comentario, instructorId: instructor.id },
-      select: { id: true },
-    });
-    await tx.evaluacionItem.deleteMany({ where: { evaluacionId: ev.id } });
-    await tx.evaluacionItem.createMany({ data: valores.map((v) => ({ evaluacionId: ev.id, ...v })) });
+    let id = evaluacionId;
+    if (id) {
+      // Solo se edita una evaluación de ESTE alumno.
+      const existe = await tx.evaluacion.findFirst({ where: { id, alumnoId }, select: { id: true } });
+      if (!existe) throw new Error("Evaluación inexistente");
+      await tx.evaluacion.update({ where: { id }, data: { fecha, comentario, instructorId: instructor.id } });
+      await tx.evaluacionItem.deleteMany({ where: { evaluacionId: id } });
+    } else {
+      id = (await tx.evaluacion.create({ data: { alumnoId, fecha, comentario, instructorId: instructor.id }, select: { id: true } })).id;
+    }
+    await tx.evaluacionItem.createMany({ data: valores.map((v) => ({ evaluacionId: id!, ...v })) });
   });
 
-  redirect(`/evaluar?periodo=${periodo}&categoria=${alumno.categoriaId}`);
+  revalidatePath("/evaluar");
+  revalidatePath(`/alumnos/${alumnoId}`);
+  redirect(`/alumnos/${alumnoId}`);
+}
+
+export async function eliminarEvaluacion(alumnoId: string, evaluacionId: string) {
+  await requerirInstructor();
+  await db.evaluacion.deleteMany({ where: { id: evaluacionId, alumnoId } });
+  revalidatePath("/evaluar");
+  revalidatePath(`/alumnos/${alumnoId}`);
+  redirect(`/alumnos/${alumnoId}`);
 }

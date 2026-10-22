@@ -13,6 +13,7 @@ export type TarjetaCategoria = {
   total: number;
   presentes: number;
   minutos: number | null;
+  viento: string | null;
   estado: Estado;
   temas: string[];
 };
@@ -80,6 +81,7 @@ function Tarjeta({ fecha, categoria: c }: { fecha: string; categoria: TarjetaCat
               {c.total} {c.total === 1 ? "alumno" : "alumnos"}
               {c.estado === "realizado" && ` · ${c.presentes} presentes`}
               {c.minutos !== null && ` · ${formatoDuracion(c.minutos)} en el agua`}
+              {c.viento && ` · viento ${c.viento}`}
             </p>
             {c.temas.length > 0 && <p className="mt-1 truncate text-sm text-suave">{c.temas.join(", ")}</p>}
           </div>

@@ -24,7 +24,7 @@ export function GraficoLinea({ puntos, titulo }: { puntos: Punto[]; titulo: stri
         ))}
         {puntos.length > 1 && <path d={linea} fill="none" stroke="var(--acento)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />}
         {puntos.map((p, i) => (
-          <g key={p.etiqueta}>
+          <g key={i}>
             <circle cx={x(i)} cy={y(p.valor)} r="4" fill="var(--acento)" />
             <text x={x(i)} y={y(p.valor) - 9} textAnchor="middle" fontSize="10" fontWeight="600" fill="var(--texto)">{formatoNota(p.valor)}</text>
             <text x={x(i)} y={alto - 8} textAnchor="middle" fontSize="10" fill="var(--texto-suave)">{p.etiqueta}</text>

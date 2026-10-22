@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
 import { aFechaDB, fechaLarga, hoyAR, sumarDias } from "@/lib/fechas";
-import { minutosEntre } from "@/lib/calculos";
+import { minutosEntre, textoViento } from "@/lib/calculos";
 import { SelectorFecha } from "@/components/selector-fecha";
 import { TarjetasCategorias } from "./tarjetas-categorias";
 
@@ -65,6 +65,7 @@ export default async function PaginaHoy({ searchParams }: { searchParams: Promis
               total: cantidad.get(c.id) ?? 0,
               presentes: e?.asistencias.filter((a) => a.presente).length ?? 0,
               minutos: e ? minutosEntre(e.horaBajada, e.horaRegreso) : null,
+              viento: e ? textoViento(e.vientoDir, e.vientoNudos) : null,
               estado: e?.realizado ? "realizado" : e ? "planificado" : "sin_cargar",
               temas: e?.temas.map((t) => t.tema.nombre) ?? [],
             };

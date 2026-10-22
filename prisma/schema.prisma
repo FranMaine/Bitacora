@@ -79,6 +79,10 @@ model Entrenamiento {
   // "HH:mm" (hora de Argentina). Con ambos se calculan las horas en el agua.
   horaBajada  String?
   horaRegreso String?
+  // Viento del día: dirección de donde sopla (N, NE, E, SE, S, SO, O, NO) y
+  // intensidad en nudos. Ambos opcionales.
+  vientoDir   String?
+  vientoNudos Int?
   plan        String?
   resumen     String?
   // false = solo el plan cargado de antemano; true = el entrenamiento ya se hizo
@@ -127,15 +131,20 @@ model Evaluacion {
   id           String     @id @default(cuid())
   alumnoId     String
   alumno       Alumno     @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
-  periodo      String
+  // Fecha en que se hizo la evaluación. Se pueden hacer varias, cuando se quiera:
+  // la ficha del alumno las muestra todas en orden para ver su evolución.
+  fecha        DateTime   @default(now()) @db.Date
+  // Legado (de cuando era una por mes); se elimina después de migrar.
+  periodo      String?
   comentario   String?
   instructorId String
   instructor   Instructor @relation(fields: [instructorId], references: [id])
+  createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
   items EvaluacionItem[]
 
-  @@unique([alumnoId, periodo])
+  @@index([alumnoId, fecha])
 }
 
 model EvaluacionItem {

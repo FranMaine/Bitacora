@@ -5,7 +5,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
 import { aFechaDB } from "@/lib/fechas";
-import { horaValida } from "@/lib/calculos";
+import { direccionVientoValida, horaValida } from "@/lib/calculos";
 
 export type EstadoEntrenamiento = { error?: string; guardado?: "plan" | "realizado" };
 
@@ -13,6 +13,11 @@ const Hora = z.string().trim().refine((h) => h === "" || horaValida(h), "Hora in
 const Texto = z.string().trim().max(4000);
 
 const Datos = z.object({
+  vientoDir: z.string().trim().refine((d) => d === "" || direccionVientoValida(d), "Dirección de viento inválida"),
+  vientoNudos: z
+    .string()
+    .trim()
+    .refine((n) => n === "" || (/^\d{1,2}$/.test(n) && Number(n) <= 80), "Los nudos van de 0 a 80"),
   plan: Texto,
   resumen: Texto,
   horaBajada: Hora,
@@ -30,13 +35,15 @@ export async function guardarEntrenamiento(
   if (!fechaDB) return { error: "Fecha inválida." };
 
   const parsed = Datos.safeParse({
+    vientoDir: formData.get("vientoDir") ?? "",
+    vientoNudos: formData.get("vientoNudos") ?? "",
     plan: formData.get("plan") ?? "",
     resumen: formData.get("resumen") ?? "",
     horaBajada: formData.get("horaBajada") ?? "",
     horaRegreso: formData.get("horaRegreso") ?? "",
   });
-  if (!parsed.success) return { error: "Revisá los horarios y los textos." };
-  const { plan, resumen, horaBajada, horaRegreso } = parsed.data;
+  if (!parsed.success) return { error: parsed.error.issues[0].message + "." };
+  const { plan, resumen, horaBajada, horaRegreso, vientoDir, vientoNudos } = parsed.data;
   if (horaBajada && horaRegreso && horaRegreso <= horaBajada) {
     return { error: "El regreso tiene que ser posterior a la bajada al agua." };
   }
@@ -61,7 +68,14 @@ export async function guardarEntrenamiento(
     (await db.tema.findMany({ where: { id: { in: [...plani, ...hechos] } }, select: { id: true } })).map((t) => t.id),
   );
 
-  const datos = { horaBajada: horaBajada || null, horaRegreso: horaRegreso || null, plan: plan || null, resumen: resumen || null };
+  const datos = {
+    horaBajada: horaBajada || null,
+    horaRegreso: horaRegreso || null,
+    vientoDir: vientoDir || null,
+    vientoNudos: vientoNudos === "" ? null : Number(vientoNudos),
+    plan: plan || null,
+    resumen: resumen || null,
+  };
 
   await db.$transaction(async (tx) => {
     const e = await tx.entrenamiento.upsert({

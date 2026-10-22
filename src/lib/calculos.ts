@@ -62,3 +62,30 @@ export function barras<T extends { valor: number }>(items: T[]): (T & { ancho: n
 export function diasEntre(a: string, b: string): number {
   return Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000);
 }
+
+/** Direcciones de viento (de dónde sopla), en el orden de la rosa. */
+export const DIRECCIONES_VIENTO = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"] as const;
+
+export function direccionVientoValida(texto: string): boolean {
+  return (DIRECCIONES_VIENTO as readonly string[]).includes(texto);
+}
+
+/** "SE 12 kn", "SE", "12 kn" o null si no hay nada. */
+export function textoViento(dir?: string | null, nudos?: number | null): string | null {
+  const partes = [dir || null, nudos != null ? `${nudos} kn` : null].filter(Boolean);
+  return partes.length ? partes.join(" ") : null;
+}
+
+/** Diferencia entre el último valor y el anterior (null si hay menos de dos). */
+export function tendencia(valores: number[]): number | null {
+  if (valores.length < 2) return null;
+  return valores[valores.length - 1] - valores[valores.length - 2];
+}
+
+/** "+0,8", "−0,5" o "=" (con un decimal, formato argentino). */
+export function formatoTendencia(delta: number | null): string | null {
+  if (delta === null) return null;
+  const r = Math.round(delta * 10) / 10;
+  if (r === 0) return "=";
+  return `${r > 0 ? "+" : "−"}${String(Math.abs(r)).replace(".", ",")}`;
+}

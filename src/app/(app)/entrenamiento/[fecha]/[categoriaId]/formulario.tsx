@@ -1,10 +1,10 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Check, Clock, MessageSquare, MessageSquareText } from "lucide-react";
+import { Check, Clock, MessageSquare, MessageSquareText, Wind } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { guardarEntrenamiento, type EstadoEntrenamiento } from "./actions";
-import { formatoDuracion, minutosEntre } from "@/lib/calculos";
+import { DIRECCIONES_VIENTO, formatoDuracion, minutosEntre } from "@/lib/calculos";
 
 type Props = {
   fecha: string;
@@ -16,6 +16,8 @@ type Props = {
     resumen: string;
     horaBajada: string;
     horaRegreso: string;
+    vientoDir: string;
+    vientoNudos: string;
     realizado: boolean;
     existe: boolean;
     temasPlan: string[];
@@ -40,6 +42,8 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, in
   const [estado, enviar, pendiente] = useActionState<EstadoEntrenamiento, FormData>(accion, {});
   const [bajada, setBajada] = useState(inicial.horaBajada);
   const [regreso, setRegreso] = useState(inicial.horaRegreso);
+  const [vientoDir, setVientoDir] = useState(inicial.vientoDir);
+  const [vientoNudos, setVientoNudos] = useState(inicial.vientoNudos);
   const [presentes, setPresentes] = useState(() => new Set(inicial.presentes));
   // Todos los campos son controlados: al terminar una acción React reinicia los
   // campos no controlados a su valor inicial y se vería como si se hubiera borrado lo guardado.
@@ -83,6 +87,38 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, in
           Tiempo en el agua: <strong className="text-texto">{formatoDuracion(minutos)}</strong>
         </p>
       )}
+      <div className="border-t border-borde pt-3">
+        <p className="etiqueta flex items-center gap-1.5">
+          <Wind size={14} aria-hidden /> Viento del día
+        </p>
+        <div className="grid grid-cols-[1fr_1fr] gap-3">
+          <div>
+            <label htmlFor="vientoDir" className="sr-only">Dirección</label>
+            <select id="vientoDir" name="vientoDir" value={vientoDir} onChange={(e) => setVientoDir(e.target.value)} className="campo">
+              <option value="">Dirección</option>
+              {DIRECCIONES_VIENTO.map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+          </div>
+          <div className="relative">
+            <label htmlFor="vientoNudos" className="sr-only">Nudos</label>
+            <input
+              id="vientoNudos"
+              name="vientoNudos"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={80}
+              placeholder="Nudos"
+              value={vientoNudos}
+              onChange={(e) => setVientoNudos(e.target.value)}
+              className="campo pr-12"
+            />
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-suave">kn</span>
+          </div>
+        </div>
+      </div>
     </section>
   );
 

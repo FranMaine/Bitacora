@@ -1,16 +1,22 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, Check, X, MessageSquareText } from "lucide-react";
+import { ChevronLeft, Check, X, MessageSquareText, Plus } from "lucide-react";
 import { LogoClase } from "@/components/logo-clase";
 import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
-import { deFechaDB, fechaCorta, nombrePeriodo, periodoActual, periodoCorto } from "@/lib/fechas";
-import { formatoNota, porcentaje, promedio, rachaAusencias } from "@/lib/calculos";
+import { deFechaDB, fechaCorta } from "@/lib/fechas";
+import { formatoDuracion, formatoNota, formatoTendencia, minutosEntre, porcentaje, promedio, rachaAusencias, tendencia } from "@/lib/calculos";
 import { GraficoLinea } from "@/components/grafico-linea";
 import { cambiarEstadoAlumno } from "../actions";
 import { FormularioEdicion } from "./formulario-edicion";
 
 export const metadata = { title: "Alumno" };
+
+function Delta({ valor }: { valor: number | null }) {
+  const t = formatoTendencia(valor);
+  if (!t || t === "=") return null;
+  return <span className={`text-xs font-medium ${t.startsWith("+") ? "text-ok" : "text-peligro"}`}>{t}</span>;
+}
 
 export default async function FichaAlumno({ params }: { params: Promise<{ id: string }> }) {
   await requerirInstructor();
@@ -22,18 +28,45 @@ export default async function FichaAlumno({ params }: { params: Promise<{ id: st
     db.categoria.findMany({ where: { OR: [{ activa: true }, { id: alumno.categoriaId }] }, orderBy: { orden: "asc" }, select: { id: true, nombre: true } }),
     db.asistencia.findMany({
       where: { alumnoId: id, entrenamiento: { realizado: true } },
-      include: { entrenamiento: { select: { fecha: true } } },
+      include: { entrenamiento: { select: { fecha: true, horaBajada: true, horaRegreso: true } } },
       orderBy: { entrenamiento: { fecha: "desc" } },
     }),
-    db.evaluacion.findMany({ where: { alumnoId: id }, include: { items: true }, orderBy: { periodo: "asc" } }),
+    db.evaluacion.findMany({
+      where: { alumnoId: id },
+      orderBy: [{ fecha: "asc" }, { createdAt: "asc" }],
+      include: { items: { include: { criterio: { select: { id: true, nombre: true, orden: true } } } } },
+    }),
   ]);
 
   const presentes = asistencias.filter((a) => a.presente).length;
   const pct = porcentaje(presentes, asistencias.length);
   const racha = rachaAusencias(asistencias.map((a) => a.presente));
-  const notas = evaluaciones
-    .map((e) => ({ periodo: e.periodo, promedio: promedio(e.items.map((i) => i.valor)) }))
-    .filter((n): n is { periodo: string; promedio: number } => n.promedio !== null);
+  const minutosAgua = asistencias.reduce(
+    (s, a) => (a.presente ? s + (minutosEntre(a.entrenamiento.horaBajada, a.entrenamiento.horaRegreso) ?? 0) : s),
+    0,
+  );
+
+  // Una fila por evaluación, de la más vieja a la más nueva.
+  const serie = evaluaciones.map((e) => ({
+    id: e.id,
+    fecha: deFechaDB(e.fecha),
+    promedio: promedio(e.items.map((i) => i.valor)),
+    comentario: e.comentario,
+    items: [...e.items].sort((a, b) => a.criterio.orden - b.criterio.orden),
+  }));
+  const conNota = serie.filter((e): e is typeof e & { promedio: number } => e.promedio !== null);
+  const deltaGeneral = tendencia(conNota.map((e) => e.promedio));
+
+  // Por criterio: todas las notas en el tiempo, para ver cuánto mejoró cada uno.
+  const porCriterio = new Map<string, { nombre: string; orden: number; valores: number[] }>();
+  for (const e of serie) {
+    for (const it of e.items) {
+      const f = porCriterio.get(it.criterio.id) ?? { nombre: it.criterio.nombre, orden: it.criterio.orden, valores: [] };
+      f.valores.push(it.valor);
+      porCriterio.set(it.criterio.id, f);
+    }
+  }
+  const criterios = [...porCriterio.values()].sort((a, b) => a.orden - b.orden);
 
   return (
     <div className="space-y-6">
@@ -43,19 +76,24 @@ export default async function FichaAlumno({ params }: { params: Promise<{ id: st
         </Link>
         <h1 className="display mt-2 text-3xl sm:text-4xl">{alumno.nombre}</h1>
         <p className="mt-1 flex items-center gap-1.5 text-suave">
-          <span className="flex size-5 items-center justify-center rounded-[6px] bg-acento-suave text-acento" aria-hidden>
-            <LogoClase nombre={alumno.categoria.nombre} tam={14} />
+          <span className="flex size-5 items-center justify-center" aria-hidden>
+            <LogoClase nombre={alumno.categoria.nombre} tam={18} />
           </span>
           {alumno.categoria.nombre}
           {!alumno.activo && " · archivado"}
         </p>
       </div>
 
-      <section className="grid grid-cols-3 gap-3">
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="caja p-3">
           <p className="text-xs text-suave">Asistencia</p>
           <p className="text-xl font-semibold">{pct === null ? "—" : `${pct}%`}</p>
-          <p className="text-xs text-suave">{presentes} de {asistencias.length}</p>
+          <p className="text-xs text-suave">{presentes} de {asistencias.length} salidas</p>
+        </div>
+        <div className="caja p-3">
+          <p className="text-xs text-suave">En el agua</p>
+          <p className="text-xl font-semibold">{minutosAgua ? formatoDuracion(minutosAgua) : "—"}</p>
+          <p className="text-xs text-suave">sumando sus salidas</p>
         </div>
         <div className="caja p-3">
           <p className="text-xs text-suave">Faltas seguidas</p>
@@ -63,37 +101,89 @@ export default async function FichaAlumno({ params }: { params: Promise<{ id: st
         </div>
         <div className="caja p-3">
           <p className="text-xs text-suave">Última nota</p>
-          <p className="text-xl font-semibold">{formatoNota(notas.at(-1)?.promedio ?? null)}</p>
-          <p className="text-xs text-suave">{notas.length ? nombrePeriodo(notas.at(-1)!.periodo) : "sin evaluar"}</p>
+          <p className="flex items-baseline gap-1.5 text-xl font-semibold">
+            {formatoNota(conNota.at(-1)?.promedio ?? null)} <Delta valor={deltaGeneral} />
+          </p>
+          <p className="text-xs text-suave">{conNota.length ? fechaCorta(conNota.at(-1)!.fecha) : "sin evaluar"}</p>
         </div>
       </section>
 
-      <section className="caja space-y-3 p-4">
+      <section className="caja space-y-4 p-4">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="font-semibold">Evaluaciones</h2>
-          <Link href={`/evaluar/${alumno.id}?periodo=${periodoActual()}`} className="boton boton-primario !min-h-9 text-sm">
-            Evaluar este mes
+          <h2 className="font-semibold">Evolución</h2>
+          <Link href={`/evaluar/${alumno.id}`} className="boton boton-primario !min-h-9 text-sm">
+            <Plus size={16} aria-hidden /> Nueva evaluación
           </Link>
         </div>
-        {notas.length > 0 ? (
-          <GraficoLinea
-            titulo={`Evolución del promedio de ${alumno.nombre}`}
-            puntos={notas.map((n) => ({ etiqueta: periodoCorto(n.periodo), valor: n.promedio }))}
-          />
+        {conNota.length === 0 ? (
+          <p className="text-sm text-suave">Todavía no tiene evaluaciones. Podés hacerle una cuando quieras.</p>
         ) : (
-          <p className="text-sm text-suave">Todavía no tiene evaluaciones.</p>
+          <>
+            <GraficoLinea
+              titulo={`Evolución del promedio de ${alumno.nombre}`}
+              puntos={conNota.map((e) => ({ etiqueta: fechaCorta(e.fecha), valor: e.promedio }))}
+            />
+            {conNota.length > 1 && (
+              <p className="text-sm text-suave">
+                De la primera evaluación ({formatoNota(conNota[0].promedio)}) a la última ({formatoNota(conNota.at(-1)!.promedio)}):{" "}
+                <strong className={conNota.at(-1)!.promedio >= conNota[0].promedio ? "text-ok" : "text-peligro"}>
+                  {formatoTendencia(conNota.at(-1)!.promedio - conNota[0].promedio)}
+                </strong>
+              </p>
+            )}
+          </>
         )}
-        {evaluaciones.length > 0 && (
-          <ul className="divide-y divide-borde">
-            {[...evaluaciones].reverse().map((e) => (
-              <li key={e.id}>
-                <Link href={`/evaluar/${alumno.id}?periodo=${e.periodo}`} className="flex min-h-11 items-center justify-between py-2 hover:text-acento">
-                  <span className="first-letter:uppercase">{nombrePeriodo(e.periodo)}</span>
-                  <span className="font-semibold">{formatoNota(promedio(e.items.map((i) => i.valor)))}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+
+        {criterios.length > 0 && (
+          <div>
+            <h3 className="mb-2 text-sm font-medium text-suave">Por criterio</h3>
+            <ul className="divide-y divide-borde">
+              {criterios.map((c) => {
+                const ultimo = c.valores.at(-1)!;
+                return (
+                  <li key={c.nombre} className="py-2.5">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="text-sm">{c.nombre}</span>
+                      <span className="flex items-baseline gap-1.5">
+                        <Delta valor={tendencia(c.valores)} />
+                        <span className="font-semibold">{ultimo}</span>
+                      </span>
+                    </div>
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-borde" aria-hidden>
+                      <div className="h-full rounded-full bg-acento" style={{ width: `${ultimo * 10}%` }} />
+                    </div>
+                    {c.valores.length > 1 && <p className="mt-1 text-xs text-suave">Historial: {c.valores.join(" → ")}</p>}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+
+        {serie.length > 0 && (
+          <div>
+            <h3 className="mb-1 text-sm font-medium text-suave">Todas las evaluaciones</h3>
+            <ul className="divide-y divide-borde">
+              {[...serie].reverse().map((e, idx, lista) => {
+                const anterior = lista[idx + 1]?.promedio ?? null;
+                return (
+                  <li key={e.id}>
+                    <Link href={`/evaluar/${alumno.id}?id=${e.id}`} className="block py-3 transition-colors hover:text-acento">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="font-medium">{fechaCorta(e.fecha)}/{e.fecha.slice(2, 4)}</span>
+                        <span className="flex items-baseline gap-1.5">
+                          {e.promedio !== null && anterior !== null && <Delta valor={e.promedio - anterior} />}
+                          <span className="text-lg font-semibold">{formatoNota(e.promedio)}</span>
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-xs text-suave">{e.items.map((i) => `${i.criterio.nombre} ${i.valor}`).join(" · ")}</p>
+                      {e.comentario && <p className="mt-1 text-sm text-suave">“{e.comentario}”</p>}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         )}
       </section>
 

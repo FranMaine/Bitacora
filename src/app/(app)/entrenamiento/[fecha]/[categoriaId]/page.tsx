@@ -65,6 +65,8 @@ export default async function PaginaEntrenamiento({ params }: { params: Promise<
           resumen: entrenamiento?.resumen ?? "",
           horaBajada: entrenamiento?.horaBajada ?? "",
           horaRegreso: entrenamiento?.horaRegreso ?? "",
+          vientoDir: entrenamiento?.vientoDir ?? "",
+          vientoNudos: entrenamiento?.vientoNudos != null ? String(entrenamiento.vientoNudos) : "",
           realizado: entrenamiento?.realizado ?? false,
           existe: Boolean(entrenamiento),
           temasPlan: entrenamiento?.temas.filter((t) => t.planificado).map((t) => t.temaId) ?? [],
