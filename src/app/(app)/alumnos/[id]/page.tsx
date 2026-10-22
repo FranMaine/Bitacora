@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, Check, X, MessageSquareText, Plus } from "lucide-react";
+import { ChevronLeft, Check, X, MessageSquareText, Pencil, Plus } from "lucide-react";
 import { LogoClase } from "@/components/logo-clase";
 import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
@@ -167,17 +167,19 @@ export default async function FichaAlumno({ params }: { params: Promise<{ id: st
               {[...serie].reverse().map((e, idx, lista) => {
                 const anterior = lista[idx + 1]?.promedio ?? null;
                 return (
-                  <li key={e.id}>
-                    <Link href={`/evaluar/${alumno.id}?id=${e.id}`} className="block py-3 transition-colors hover:text-acento">
-                      <div className="flex items-baseline justify-between gap-3">
-                        <span className="font-medium">{fechaCorta(e.fecha)}/{e.fecha.slice(2, 4)}</span>
-                        <span className="flex items-baseline gap-1.5">
-                          {e.promedio !== null && anterior !== null && <Delta valor={e.promedio - anterior} />}
-                          <span className="text-lg font-semibold">{formatoNota(e.promedio)}</span>
-                        </span>
-                      </div>
-                      <p className="mt-0.5 text-xs text-suave">{e.items.map((i) => `${i.criterio.nombre} ${i.valor}`).join(" · ")}</p>
-                      {e.comentario && <p className="mt-1 text-sm text-suave">“{e.comentario}”</p>}
+                  <li key={e.id} className="py-3">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="font-medium">{fechaCorta(e.fecha)}/{e.fecha.slice(2, 4)}</span>
+                      <span className="flex items-baseline gap-1.5">
+                        {e.promedio !== null && anterior !== null && <Delta valor={e.promedio - anterior} />}
+                        <span className="text-lg font-semibold">{formatoNota(e.promedio)}</span>
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-suave">{e.items.map((i) => `${i.criterio.nombre} ${i.valor}`).join(" · ")}</p>
+                    {e.comentario && <p className="mt-1 text-sm text-suave">“{e.comentario}”</p>}
+                    {/* Solo se modifica tocando "Editar": la evaluación guardada no se abre sola. */}
+                    <Link href={`/evaluar/${alumno.id}?id=${e.id}`} className="boton !min-h-9 mt-2 text-sm">
+                      <Pencil size={14} aria-hidden /> Editar
                     </Link>
                   </li>
                 );
