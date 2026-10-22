@@ -15,7 +15,7 @@ import {
   rachaAusencias,
   tendencia,
 } from "@/lib/calculos";
-import { resumir } from "@/lib/estadisticas";
+import { avanceEvaluaciones, resumir } from "@/lib/estadisticas";
 import { Avatar } from "@/components/avatar";
 import { LogoClase } from "@/components/logo-clase";
 
@@ -165,6 +165,32 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
     .filter((x) => x.res);
   const maxMin = Math.max(0, ...comparacion.map((x) => x.res!.minutos));
 
+  // --- avance: ¿están mejorando? Siempre sobre TODO el historial del filtro (no depende del mes elegido).
+  const evalsCategoria = evaluaciones.filter((e) => !categoria || e.alumno.categoriaId === categoria.id);
+  const avance = avanceEvaluaciones(
+    evalsCategoria.map((e) => ({
+      alumnoId: e.alumnoId,
+      fecha: deFechaDB(e.fecha),
+      items: e.items.map((i) => ({ criterioId: i.criterio.id, nombre: i.criterio.nombre, valor: i.valor })),
+    })),
+  );
+  // Mes a mes (últimos 6 con datos): salidas, asistencia, viento y nota media.
+  const meses = [
+    ...new Set([...entrenos.map((e) => periodoDe(deFechaDB(e.fecha))), ...evalsCategoria.map((e) => periodoDe(deFechaDB(e.fecha)))]),
+  ]
+    .sort()
+    .slice(-6);
+  const serieMensual = meses.map((m) => {
+    const es = entrenos.filter((e) => periodoDe(deFechaDB(e.fecha)) === m);
+    const rm = resumir(es.map(aResumen));
+    const n = es.map((e) => e.vientoNudos).filter((x): x is number => x !== null);
+    const notasMes = evalsCategoria
+      .filter((e) => periodoDe(deFechaDB(e.fecha)) === m)
+      .map((e) => promedio(e.items.map((i) => i.valor)))
+      .filter((x): x is number => x !== null);
+    return { mes: m, salidas: rm.cantidad, asistencia: rm.asistenciaPct, viento: promedio(n), nota: promedio(notasMes) };
+  });
+
   const q = (p: { mes?: string; categoria?: string | null }) => {
     const parametros = new URLSearchParams();
     parametros.set("mes", p.mes ?? (todo ? "todo" : periodo));
@@ -233,6 +259,89 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
         </div>
       </section>
 
+      <section className="caja space-y-4 p-4">
+        <div>
+          <h2 className="font-semibold">Avance: ¿están mejorando?</h2>
+          <p className="text-sm text-suave">
+            Cada evaluación nueva se compara con la <strong className="font-medium text-texto">anterior del mismo alumno</strong>.
+            Acá se junta eso para {categoria ? `la categoría ${categoria.nombre}` : "todos los chicos"}.
+          </p>
+        </div>
+        {avance.comparados === 0 ? (
+          <p className="text-sm text-suave">
+            Todavía no hay chicos con dos o más evaluaciones, así que no hay nada para comparar. En cuanto se les haga la segunda, acá aparece si mejoraron.
+          </p>
+        ) : (
+          <>
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="rounded-[12px] bg-ok-suave p-3">
+                <p className="text-2xl font-semibold text-ok">{avance.mejoraron}</p>
+                <p className="text-xs text-ok">mejoraron</p>
+              </div>
+              <div className="rounded-[12px] bg-borde/40 p-3">
+                <p className="text-2xl font-semibold">{avance.iguales}</p>
+                <p className="text-xs text-suave">igual</p>
+              </div>
+              <div className="rounded-[12px] bg-alerta-suave p-3">
+                <p className="text-2xl font-semibold text-alerta">{avance.bajaron}</p>
+                <p className="text-xs text-alerta">bajaron</p>
+              </div>
+            </div>
+            <p className="text-sm text-suave">
+              De {avance.comparados} {avance.comparados === 1 ? "chico comparado" : "chicos comparados"}, la nota promedio cambió{" "}
+              <strong className={(avance.deltaMedio ?? 0) >= 0 ? "text-ok" : "text-peligro"}>{formatoTendencia(avance.deltaMedio)}</strong> entre su evaluación anterior y la última.
+            </p>
+            <ul className="divide-y divide-borde">
+              {avance.porCriterio.map((c) => (
+                <li key={c.nombre} className="flex items-baseline justify-between gap-3 py-2 text-sm">
+                  <span>{c.nombre}</span>
+                  <span className="flex items-baseline gap-2">
+                    <span className="text-suave">{formatoNota(c.anterior)} → {formatoNota(c.actual)}</span>
+                    <Delta valor={c.delta} />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </section>
+
+      {serieMensual.length > 0 && (
+        <section className="caja space-y-3 p-4">
+          <div>
+            <h2 className="font-semibold">Mes a mes</h2>
+            <p className="text-sm text-suave">Cómo viene cambiando {categoria ? categoria.nombre : "todo el club"} en los últimos meses.</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[20rem] text-sm">
+              <thead>
+                <tr className="text-left text-xs text-suave">
+                  <th className="py-1 font-medium">Mes</th>
+                  <th className="py-1 text-right font-medium">Salidas</th>
+                  <th className="py-1 text-right font-medium">Asist.</th>
+                  <th className="py-1 text-right font-medium">Viento</th>
+                  <th className="py-1 text-right font-medium">Nota</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-borde">
+                {serieMensual.map((m, i) => (
+                  <tr key={m.mes}>
+                    <td className="py-2 first-letter:uppercase">{nombrePeriodo(m.mes)}</td>
+                    <td className="py-2 text-right">{m.salidas}</td>
+                    <td className="py-2 text-right">{m.asistencia === null ? "—" : `${m.asistencia}%`}</td>
+                    <td className="py-2 text-right">{m.viento === null ? "—" : `${formatoNota(m.viento)} kn`}</td>
+                    <td className="py-2 text-right font-semibold">
+                      {m.nota === null ? "—" : formatoNota(m.nota)}{" "}
+                      {m.nota !== null && serieMensual[i - 1]?.nota != null && <Delta valor={m.nota - serieMensual[i - 1].nota!} />}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       {!categoria && (
         <section className="caja space-y-4 p-4">
           <h2 className="font-semibold">Por categoría</h2>
@@ -291,6 +400,13 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
               {alumnosFiltro.map((a) => {
                 const s = statsAlumno.get(a.id);
                 const serieNotas = notasPorAlumno.get(a.id) ?? [];
+                const d = tendencia(serieNotas);
+                const estadoAvance =
+                  serieNotas.length === 0 ? { t: "Sin evaluar", c: "chip-neutro" }
+                  : d === null ? { t: "1ª evaluación", c: "chip-neutro" }
+                  : d > 0.05 ? { t: `Mejoró ${formatoTendencia(d)}`, c: "chip-ok" }
+                  : d < -0.05 ? { t: `Bajó ${formatoTendencia(d)}`, c: "chip-alerta" }
+                  : { t: "Igual", c: "chip-neutro" };
                 return (
                   <li key={a.id}>
                     <Link href={`/alumnos/${a.id}`} className="flex items-center gap-3 py-2.5 transition-colors hover:text-acento">
@@ -302,10 +418,8 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
                         </p>
                       </div>
                       <div className="shrink-0 text-right">
-                        <p className="flex items-baseline justify-end gap-1.5 text-sm font-semibold">
-                          <Delta valor={tendencia(serieNotas)} /> {serieNotas.length ? formatoNota(serieNotas.at(-1)!) : "—"}
-                        </p>
-                        <p className="text-xs text-suave">{s ? `${porcentaje(s.presentes, s.total)}% asist.` : ""}</p>
+                        <p className="text-sm font-semibold">{serieNotas.length ? formatoNota(serieNotas.at(-1)!) : "—"}</p>
+                        <span className={`chip ${estadoAvance.c} !px-2 !py-0 text-xs`}>{estadoAvance.t}</span>
                       </div>
                     </Link>
                   </li>

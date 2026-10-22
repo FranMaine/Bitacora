@@ -41,7 +41,7 @@ export async function guardarEvaluacion(
 
   const comentario = String(formData.get("comentario") ?? "").trim().slice(0, 4000) || null;
 
-  await db.$transaction(async (tx) => {
+  const guardadaId = await db.$transaction(async (tx) => {
     let id = evaluacionId;
     if (id) {
       // Solo se edita una evaluación de ESTE alumno.
@@ -53,11 +53,13 @@ export async function guardarEvaluacion(
       id = (await tx.evaluacion.create({ data: { alumnoId, fecha, comentario, instructorId: instructor.id }, select: { id: true } })).id;
     }
     await tx.evaluacionItem.createMany({ data: valores.map((v) => ({ evaluacionId: id!, ...v })) });
+    return id!;
   });
 
   revalidatePath("/evaluar");
   revalidatePath(`/alumnos/${alumnoId}`);
-  redirect(`/alumnos/${alumnoId}`);
+  // Se muestra el detalle recién guardado: ahí se ve contra qué evaluación se comparó.
+  redirect(`/evaluar/${alumnoId}/${guardadaId}`);
 }
 
 export async function eliminarEvaluacion(alumnoId: string, evaluacionId: string) {

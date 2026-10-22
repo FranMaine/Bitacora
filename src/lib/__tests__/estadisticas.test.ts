@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resumir, type EntrenamientoResumen } from "../estadisticas";
+import { resumir, avanceEvaluaciones, type EntrenamientoResumen, type EvaluacionSimple } from "../estadisticas";
 
 const base = { horaBajada: "10:00", horaRegreso: "12:00", presentes: 8, total: 10, temasHechos: [] as string[] };
 
@@ -31,5 +31,43 @@ describe("resumir", () => {
     const r = resumir([]);
     expect(r.cantidad).toBe(0);
     expect(r.asistenciaPct).toBeNull();
+  });
+});
+
+const ev = (alumnoId: string, fecha: string, a: number, b: number): EvaluacionSimple => ({
+  alumnoId,
+  fecha,
+  items: [
+    { criterioId: "c1", nombre: "Técnica", valor: a },
+    { criterioId: "c2", nombre: "Táctica", valor: b },
+  ],
+});
+
+describe("avanceEvaluaciones", () => {
+  it("compara la última evaluación de cada alumno con la anterior", () => {
+    const r = avanceEvaluaciones([
+      ev("x", "2026-09-01", 4, 4), ev("x", "2026-10-01", 6, 6), // mejoró +2
+      ev("y", "2026-09-05", 7, 7), ev("y", "2026-10-05", 7, 7), // igual
+      ev("z", "2026-09-10", 8, 6), ev("z", "2026-10-10", 6, 6), // bajó -1
+      ev("w", "2026-10-10", 9, 9), // una sola: no se compara
+    ]);
+    expect(r.comparados).toBe(3);
+    expect([r.mejoraron, r.iguales, r.bajaron]).toEqual([1, 1, 1]);
+    expect(r.deltaMedio).toBeCloseTo((2 + 0 - 1) / 3);
+    const tecnica = r.porCriterio.find((c) => c.nombre === "Técnica")!;
+    expect(tecnica.anterior).toBeCloseTo((4 + 7 + 8) / 3);
+    expect(tecnica.actual).toBeCloseTo((6 + 7 + 6) / 3);
+  });
+
+  it("usa la última y la anterior aunque haya más evaluaciones, sin importar el orden de entrada", () => {
+    const r = avanceEvaluaciones([ev("x", "2026-10-01", 6, 6), ev("x", "2026-08-01", 1, 1), ev("x", "2026-09-01", 4, 4)]);
+    expect(r.comparados).toBe(1);
+    expect(r.deltaMedio).toBe(2); // 6 vs 4, no vs 1
+  });
+
+  it("sin alumnos comparables no hay promedio", () => {
+    const r = avanceEvaluaciones([ev("x", "2026-10-01", 5, 5)]);
+    expect(r.comparados).toBe(0);
+    expect(r.deltaMedio).toBeNull();
   });
 });
