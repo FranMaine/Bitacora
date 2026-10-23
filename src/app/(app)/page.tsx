@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-// La portada de la app son las estadísticas; la jornada del día vive en /jornada.
+// La portada de la app es la Jornada (con las estadísticas del día arriba).
 export default function Inicio() {
-  redirect("/estadisticas");
+  redirect("/jornada");
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { minutosEntre, formatoDuracion, porcentaje, promedio, formatoNota, rachaAusencias, barras, diasEntre, horaValida, textoViento, direccionVientoValida, tendencia, formatoTendencia } from "../calculos";
+import { minutosEntre, formatoDuracion, porcentaje, promedio, formatoNota, rachaAusencias, barras, diasEntre, horaValida, textoViento, direccionVientoValida, tendencia, formatoTendencia, textoCorriente } from "../calculos";
 import { hoyAR, aFechaDB, sumarDias, periodoAnterior, periodoSiguiente, periodoCorto, nombrePeriodo, fechaLarga } from "../fechas";
 
 describe("minutosEntre", () => {
@@ -103,5 +103,14 @@ describe("viento y tendencia", () => {
     expect(formatoTendencia(-0.5)).toBe("−0,5");
     expect(formatoTendencia(0)).toBe("=");
     expect(formatoTendencia(null)).toBeNull();
+  });
+});
+
+describe("textoCorriente", () => {
+  it("usa coma decimal y tolera lo que falte", () => {
+    expect(textoCorriente("N", 0.8)).toBe("N 0,8 kn");
+    expect(textoCorriente(null, 1)).toBe("1 kn");
+    expect(textoCorriente("SO", null)).toBe("SO");
+    expect(textoCorriente(null, null)).toBeNull();
   });
 });

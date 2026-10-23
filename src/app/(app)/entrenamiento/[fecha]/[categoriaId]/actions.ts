@@ -97,9 +97,8 @@ export async function guardarEntrenamiento(
     vientoDir: vientoDir || null,
     vientoNudos: vientoNudos === "" ? null : Number(vientoNudos),
     tipo,
-    // La corriente solo se anota en los días de regata.
-    corrienteDir: tipo === "REGATA" ? corrienteDir || null : null,
-    corrienteNudos: tipo === "REGATA" && corrienteNudos !== "" ? Number(corrienteNudos.replace(",", ".")) : null,
+    corrienteDir: corrienteDir || null,
+    corrienteNudos: corrienteNudos === "" ? null : Number(corrienteNudos.replace(",", ".")),
     plan: plan || null,
     resumen: resumen || null,
   };

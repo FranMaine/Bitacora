@@ -13,7 +13,7 @@ export default function ErrorPantalla({ reset }: { error: Error; reset: () => vo
       </p>
       <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
         <button type="button" onClick={reset} className="boton boton-primario">Reintentar</button>
-        <Link href="/estadisticas" className="boton">Ir al inicio</Link>
+        <Link href="/jornada" className="boton">Ir al inicio</Link>
       </div>
     </div>
   );

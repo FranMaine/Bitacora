@@ -101,6 +101,7 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
   const porDireccion = new Map<string, number>();
   for (const e of enRango) if (e.vientoDir) porDireccion.set(e.vientoDir, (porDireccion.get(e.vientoDir) ?? 0) + 1);
   const direcciones = [...porDireccion.entries()].sort((a, b) => b[1] - a[1]);
+  const corrienteProm = promedio(enRango.map((e) => e.corrienteNudos).filter((n): n is number => n !== null));
 
   // --- regatas (días de regata dentro del filtro)
   const regatas = enRango.filter((e) => e.tipo === "REGATA");
@@ -252,7 +253,7 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
         <Link href={q({ mes: periodoSiguiente(periodo) })} className="boton" aria-label="Mes siguiente"><ChevronRight size={18} aria-hidden /></Link>
       </div>
 
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <div className="caja p-3">
           <p className="text-xs text-suave">Salidas</p>
           <p className="text-xl font-semibold">{r.cantidad}</p>
@@ -268,6 +269,10 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
         <div className="caja p-3">
           <p className="text-xs text-suave">Viento medio</p>
           <p className="text-xl font-semibold">{vientoProm === null ? "—" : `${formatoNota(vientoProm)} kn`}</p>
+        </div>
+        <div className="caja p-3">
+          <p className="text-xs text-suave">Corriente media</p>
+          <p className="text-xl font-semibold">{corrienteProm === null ? "—" : `${formatoNota(corrienteProm)} kn`}</p>
         </div>
       </section>
 

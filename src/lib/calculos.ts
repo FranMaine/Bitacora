@@ -89,3 +89,9 @@ export function formatoTendencia(delta: number | null): string | null {
   if (r === 0) return "=";
   return `${r > 0 ? "+" : "−"}${String(Math.abs(r)).replace(".", ",")}`;
 }
+
+/** "N 0,8 kn", "N", "0,8 kn" o null si no hay nada (la corriente va con un decimal). */
+export function textoCorriente(dir?: string | null, nudos?: number | null): string | null {
+  const partes = [dir || null, nudos != null ? `${String(nudos).replace(".", ",")} kn` : null].filter(Boolean);
+  return partes.length ? partes.join(" ") : null;
+}

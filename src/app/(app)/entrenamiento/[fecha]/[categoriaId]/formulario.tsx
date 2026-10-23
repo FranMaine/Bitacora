@@ -153,8 +153,8 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
           </div>
         </div>
       </div>
-      {esRegata && (
-        <div className="aparecer border-t border-borde pt-3">
+      {(
+        <div className="border-t border-borde pt-3">
           <p className="etiqueta flex items-center gap-1.5">
             <Waves size={14} aria-hidden /> Corriente
           </p>
