@@ -85,10 +85,13 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
 
   function calificar(alumnoId: string, faseId: string, valor: number) {
     const clave = `${alumnoId}|${faseId}`;
-    const n = { ...califs };
-    if (n[clave] === valor) delete n[clave]; // tocar de nuevo la opción elegida la borra
-    else n[clave] = valor;
-    setCalifs(n);
+    // Actualización funcional: si se tocan dos fases muy seguido, ninguna pisa a la otra.
+    setCalifs((prev) => {
+      const n = { ...prev };
+      if (n[clave] === valor) delete n[clave]; // tocar de nuevo la opción elegida la borra
+      else n[clave] = valor;
+      return n;
+    });
   }
 
   const selectorTipo = (
@@ -215,7 +218,7 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
                       name="presente"
                       value={a.id}
                       checked={presentes.has(a.id)}
-                      onChange={() => setPresentes(alternarEn(presentes, a.id))}
+                      onChange={() => setPresentes((p) => alternarEn(p, a.id))}
                       className="size-5 shrink-0 accent-[var(--acento)]"
                     />
                     <Avatar nombre={a.nombre} tam={28} />
@@ -224,7 +227,7 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
                   {esRegata && fases.length > 0 && (
                     <button
                       type="button"
-                      onClick={() => setCalificando(alternarEn(calificando, a.id))}
+                      onClick={() => setCalificando((c) => alternarEn(c, a.id))}
                       aria-expanded={abreFases}
                       className={`flex h-9 shrink-0 items-center gap-1 rounded-full px-2.5 text-xs font-medium transition-colors ${
                         calificadas > 0 ? "bg-acento-suave text-acento" : "bg-borde/50 text-suave hover:text-texto"
@@ -236,7 +239,7 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
                   )}
                   <button
                     type="button"
-                    onClick={() => setAbiertas(alternarEn(abiertas, a.id))}
+                    onClick={() => setAbiertas((c) => alternarEn(c, a.id))}
                     aria-expanded={abierta}
                     aria-label={tieneNota ? `Observación de ${a.nombre}` : `Agregar observación sobre ${a.nombre}`}
                     className={`flex size-9 shrink-0 items-center justify-center rounded-full transition-colors ${
@@ -283,7 +286,7 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
                       name={`nota_${a.id}`}
                       rows={2}
                       value={nota}
-                      onChange={(e) => setNotas({ ...notas, [a.id]: e.target.value })}
+                      onChange={(e) => setNotas((n) => ({ ...n, [a.id]: e.target.value }))}
                       placeholder={`Algo sobre ${a.nombre.split(" ")[0]}…`}
                       className="campo text-sm"
                       maxLength={500}
