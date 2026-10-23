@@ -18,6 +18,12 @@ const Datos = z.object({
     .string()
     .trim()
     .refine((n) => n === "" || (/^\d{1,2}$/.test(n) && Number(n) <= 80), "Los nudos van de 0 a 80"),
+  tipo: z.enum(["ENTRENAMIENTO", "REGATA"]),
+  corrienteDir: z.string().trim().refine((d) => d === "" || direccionVientoValida(d), "Dirección de corriente inválida"),
+  corrienteNudos: z
+    .string()
+    .trim()
+    .refine((n) => n === "" || (/^\d(\.\d)?$/.test(n.replace(",", ".")) && Number(n.replace(",", ".")) <= 9.9), "La corriente va de 0 a 9,9 nudos"),
   plan: Texto,
   resumen: Texto,
   horaBajada: Hora,
@@ -37,13 +43,16 @@ export async function guardarEntrenamiento(
   const parsed = Datos.safeParse({
     vientoDir: formData.get("vientoDir") ?? "",
     vientoNudos: formData.get("vientoNudos") ?? "",
+    tipo: formData.get("tipo") ?? "ENTRENAMIENTO",
+    corrienteDir: formData.get("corrienteDir") ?? "",
+    corrienteNudos: formData.get("corrienteNudos") ?? "",
     plan: formData.get("plan") ?? "",
     resumen: formData.get("resumen") ?? "",
     horaBajada: formData.get("horaBajada") ?? "",
     horaRegreso: formData.get("horaRegreso") ?? "",
   });
   if (!parsed.success) return { error: parsed.error.issues[0].message + "." };
-  const { plan, resumen, horaBajada, horaRegreso, vientoDir, vientoNudos } = parsed.data;
+  const { plan, resumen, horaBajada, horaRegreso, vientoDir, vientoNudos, tipo, corrienteDir, corrienteNudos } = parsed.data;
   if (horaBajada && horaRegreso && horaRegreso <= horaBajada) {
     return { error: "El regreso tiene que ser posterior a la bajada al agua." };
   }
@@ -68,11 +77,29 @@ export async function guardarEntrenamiento(
     (await db.tema.findMany({ where: { id: { in: [...plani, ...hechos] } }, select: { id: true } })).map((t) => t.id),
   );
 
+  // Calificaciones por fase (solo en días de regata): "fase_<alumnoId>__<faseId>" = 1 mala, 2 regular, 3 bien.
+  const califs: { alumnoId: string; faseId: string; valor: number }[] = [];
+  if (tipo === "REGATA") {
+    const fasesValidas = new Set((await db.faseRegata.findMany({ select: { id: true } })).map((f) => f.id));
+    for (const [clave, crudo] of formData.entries()) {
+      const m = /^fase_(.+)__(.+)$/.exec(clave);
+      if (!m) continue;
+      const [, alumnoId, faseId] = m;
+      const valor = Number(crudo);
+      if (!alumnosValidos.has(alumnoId) || !fasesValidas.has(faseId) || ![1, 2, 3].includes(valor)) continue;
+      califs.push({ alumnoId, faseId, valor });
+    }
+  }
+
   const datos = {
     horaBajada: horaBajada || null,
     horaRegreso: horaRegreso || null,
     vientoDir: vientoDir || null,
     vientoNudos: vientoNudos === "" ? null : Number(vientoNudos),
+    tipo,
+    // La corriente solo se anota en los días de regata.
+    corrienteDir: tipo === "REGATA" ? corrienteDir || null : null,
+    corrienteNudos: tipo === "REGATA" && corrienteNudos !== "" ? Number(corrienteNudos.replace(",", ".")) : null,
     plan: plan || null,
     resumen: resumen || null,
   };
@@ -96,6 +123,8 @@ export async function guardarEntrenamiento(
         realizado: hechos.has(temaId),
       })),
     });
+    await tx.notaFase.deleteMany({ where: { entrenamientoId: e.id } });
+    if (califs.length) await tx.notaFase.createMany({ data: califs.map((c) => ({ entrenamientoId: e.id, ...c })) });
     await tx.asistencia.createMany({
       data: [...alumnosValidos].map((alumnoId) => {
         const nota = String(formData.get(`nota_${alumnoId}`) ?? "").trim().slice(0, 500);
@@ -109,7 +138,8 @@ export async function guardarEntrenamiento(
     });
   });
 
-  revalidatePath("/");
+  revalidatePath("/jornada");
+  revalidatePath("/estadisticas");
   revalidatePath(`/entrenamiento/${fecha}/${categoriaId}`);
   return { guardado: realizado ? "realizado" : "plan" };
 }

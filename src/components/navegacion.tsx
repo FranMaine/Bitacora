@@ -5,15 +5,16 @@ import { usePathname } from "next/navigation";
 import { CalendarDays, Users, ClipboardCheck, BarChart3, Settings } from "lucide-react";
 
 const ITEMS = [
-  { href: "/", texto: "Hoy", Icono: CalendarDays },
+  { href: "/estadisticas", texto: "Estadísticas", Icono: BarChart3 },
+  { href: "/jornada", texto: "Jornada", Icono: CalendarDays },
   { href: "/alumnos", texto: "Alumnos", Icono: Users },
   { href: "/evaluar", texto: "Evaluar", Icono: ClipboardCheck },
-  { href: "/estadisticas", texto: "Estadísticas", Icono: BarChart3 },
   { href: "/ajustes", texto: "Ajustes", Icono: Settings },
 ];
 
 function activo(ruta: string, href: string) {
-  if (href === "/") return ruta === "/" || ruta.startsWith("/entrenamiento");
+  if (href === "/jornada") return ruta.startsWith("/jornada") || ruta.startsWith("/entrenamiento");
+  if (href === "/estadisticas") return ruta === "/" || ruta.startsWith("/estadisticas");
   return ruta === href || ruta.startsWith(`${href}/`);
 }
 

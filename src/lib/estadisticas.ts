@@ -125,3 +125,40 @@ export function avanceEvaluaciones(evaluaciones: EvaluacionSimple[]): Avance {
       .sort((a, b) => b.delta - a.delta),
   };
 }
+
+export type NotaFaseSimple = { faseId: string; nombre: string; orden: number; valor: number };
+
+export type ResumenFase = {
+  faseId: string;
+  nombre: string;
+  orden: number;
+  malas: number;
+  regulares: number;
+  bien: number;
+  total: number;
+  /** % de calificaciones "bien" (0-100) */
+  pctBien: number;
+  /** promedio 1 (mala) a 3 (bien) */
+  promedio: number;
+};
+
+/** Cuántas calificaciones mala / regular / bien tuvo cada fase de la regata. Las más flojas primero. */
+export function resumenFases(notas: NotaFaseSimple[]): ResumenFase[] {
+  const porFase = new Map<string, ResumenFase>();
+  for (const n of notas) {
+    const f = porFase.get(n.faseId) ?? { faseId: n.faseId, nombre: n.nombre, orden: n.orden, malas: 0, regulares: 0, bien: 0, total: 0, pctBien: 0, promedio: 0 };
+    if (n.valor === 1) f.malas++;
+    else if (n.valor === 2) f.regulares++;
+    else if (n.valor === 3) f.bien++;
+    else continue;
+    f.total++;
+    porFase.set(n.faseId, f);
+  }
+  return [...porFase.values()]
+    .map((f) => ({
+      ...f,
+      pctBien: Math.round((f.bien / f.total) * 100),
+      promedio: (f.malas * 1 + f.regulares * 2 + f.bien * 3) / f.total,
+    }))
+    .sort((a, b) => a.promedio - b.promedio || a.orden - b.orden);
+}

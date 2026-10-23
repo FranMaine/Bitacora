@@ -24,7 +24,7 @@ export default async function FichaAlumno({ params }: { params: Promise<{ id: st
   const alumno = await db.alumno.findUnique({ where: { id }, include: { categoria: true } });
   if (!alumno) notFound();
 
-  const [categorias, asistencias, evaluaciones] = await Promise.all([
+  const [categorias, asistencias, evaluaciones, notasFase] = await Promise.all([
     db.categoria.findMany({ where: { OR: [{ activa: true }, { id: alumno.categoriaId }] }, orderBy: { orden: "asc" }, select: { id: true, nombre: true } }),
     db.asistencia.findMany({
       where: { alumnoId: id, entrenamiento: { realizado: true } },
@@ -36,7 +36,21 @@ export default async function FichaAlumno({ params }: { params: Promise<{ id: st
       orderBy: [{ fecha: "asc" }, { createdAt: "asc" }],
       include: { items: { include: { criterio: { select: { id: true, nombre: true, orden: true } } } } },
     }),
+    db.notaFase.findMany({
+      where: { alumnoId: id },
+      orderBy: { entrenamiento: { fecha: "asc" } },
+      select: { valor: true, faseId: true, fase: { select: { nombre: true, orden: true } }, entrenamiento: { select: { fecha: true } } },
+    }),
   ]);
+
+  // Desempeño en regatas: por fase, todas sus calificaciones en orden cronológico.
+  const porFase = new Map<string, { nombre: string; orden: number; valores: number[] }>();
+  for (const n of notasFase) {
+    const f = porFase.get(n.faseId) ?? { nombre: n.fase.nombre, orden: n.fase.orden, valores: [] };
+    f.valores.push(n.valor);
+    porFase.set(n.faseId, f);
+  }
+  const fasesAlumno = [...porFase.values()].sort((a, b) => a.orden - b.orden);
 
   const presentes = asistencias.filter((a) => a.presente).length;
   const pct = porcentaje(presentes, asistencias.length);
@@ -188,6 +202,33 @@ export default async function FichaAlumno({ params }: { params: Promise<{ id: st
           </div>
         )}
       </section>
+
+      {fasesAlumno.length > 0 && (
+        <section className="caja space-y-3 p-4">
+          <div>
+            <h2 className="font-semibold">En regatas</h2>
+            <p className="text-sm text-suave">Cómo le fue en cada fase, de la más vieja a la más nueva.</p>
+          </div>
+          <ul className="divide-y divide-borde">
+            {fasesAlumno.map((f) => {
+              const bien = f.valores.filter((v) => v === 3).length;
+              return (
+                <li key={f.nombre} className="flex items-center justify-between gap-3 py-2.5">
+                  <div className="min-w-0">
+                    <p className="text-sm">{f.nombre}</p>
+                    <p className="text-xs text-suave">{porcentaje(bien, f.valores.length)}% bien · {f.valores.length} {f.valores.length === 1 ? "regata" : "regatas"}</p>
+                  </div>
+                  <div className="flex shrink-0 gap-1" aria-label={f.valores.map((v) => ["", "mala", "regular", "bien"][v]).join(", ")}>
+                    {f.valores.slice(-8).map((v, i) => (
+                      <span key={i} className={`size-3.5 rounded-full ${v === 3 ? "bg-ok" : v === 2 ? "bg-alerta" : "bg-peligro"}`} />
+                    ))}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       <section className="caja p-4">
         <h2 className="mb-2 font-semibold">Últimos entrenamientos</h2>

@@ -44,6 +44,7 @@ model Alumno {
 
   asistencias  Asistencia[]
   evaluaciones Evaluacion[]
+  notasFase    NotaFase[]
 
   @@index([categoriaId])
 }
@@ -83,6 +84,11 @@ model Entrenamiento {
   // intensidad en nudos. Ambos opcionales.
   vientoDir   String?
   vientoNudos Int?
+  // ENTRENAMIENTO (lo de siempre) o REGATA (día de regata: además del viento se
+  // anota la corriente y se califica a cada chico por fase de la regata).
+  tipo           String @default("ENTRENAMIENTO")
+  corrienteDir   String?
+  corrienteNudos Float?
   plan        String?
   resumen     String?
   // false = solo el plan cargado de antemano; true = el entrenamiento ya se hizo
@@ -95,6 +101,7 @@ model Entrenamiento {
 
   temas       EntrenamientoTema[]
   asistencias Asistencia[]
+  notasFase   NotaFase[]
 
   @@unique([fecha, categoriaId])
   @@index([fecha])
@@ -155,4 +162,29 @@ model EvaluacionItem {
   valor        Int
 
   @@id([evaluacionId, criterioId])
+}
+
+// Fases de una regata que se califican a cada chico (largada, primera ceñida,
+// aproximación al barlovento, través, popa, gate, segunda ceñida...). Editable en Ajustes.
+model FaseRegata {
+  id     String  @id @default(cuid())
+  nombre String  @unique
+  orden  Int     @default(0)
+  activa Boolean @default(true)
+
+  notas NotaFase[]
+}
+
+// Calificación de un chico en una fase de un día de regata: 1 = mala, 2 = regular, 3 = bien.
+model NotaFase {
+  entrenamientoId String
+  entrenamiento   Entrenamiento @relation(fields: [entrenamientoId], references: [id], onDelete: Cascade)
+  alumnoId        String
+  alumno          Alumno        @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+  faseId          String
+  fase            FaseRegata    @relation(fields: [faseId], references: [id])
+  valor           Int
+
+  @@id([entrenamientoId, alumnoId, faseId])
+  @@index([alumnoId])
 }

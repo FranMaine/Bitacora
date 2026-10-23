@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
 
 export type EstadoAjustes = { error?: string; ok?: string };
-export type TipoCatalogo = "categoria" | "tema" | "criterio";
+export type TipoCatalogo = "categoria" | "tema" | "criterio" | "fase";
 
 const Nombre = z.string().trim().min(2, "El nombre es muy corto").max(60, "El nombre es muy largo");
 
@@ -24,6 +24,9 @@ async function crear(tipo: TipoCatalogo, nombre: string) {
   } else if (tipo === "tema") {
     const orden = ((await db.tema.aggregate({ _max: { orden: true } }))._max.orden ?? -1) + 1;
     await db.tema.create({ data: { ...data, orden } });
+  } else if (tipo === "fase") {
+    const orden = ((await db.faseRegata.aggregate({ _max: { orden: true } }))._max.orden ?? -1) + 1;
+    await db.faseRegata.create({ data: { ...data, orden } });
   } else {
     const orden = ((await db.criterio.aggregate({ _max: { orden: true } }))._max.orden ?? -1) + 1;
     await db.criterio.create({ data: { ...data, orden } });
@@ -35,6 +38,8 @@ async function actualizar(tipo: TipoCatalogo, id: string, data: { nombre?: strin
     await db.categoria.update({ where: { id }, data: { nombre: data.nombre, activa: data.activo } });
   } else if (tipo === "tema") {
     await db.tema.update({ where: { id }, data });
+  } else if (tipo === "fase") {
+    await db.faseRegata.update({ where: { id }, data: { nombre: data.nombre, activa: data.activo } });
   } else {
     await db.criterio.update({ where: { id }, data });
   }

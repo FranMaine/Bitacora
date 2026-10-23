@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Wind } from "lucide-react";
+import { ChevronLeft, ChevronRight, Waves, Wind } from "lucide-react";
 import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
 import { deFechaDB, fechaCorta, hoyAR, nombrePeriodo, periodoActual, periodoAnterior, periodoDe, periodoSiguiente, periodoValido } from "@/lib/fechas";
@@ -15,7 +15,7 @@ import {
   rachaAusencias,
   tendencia,
 } from "@/lib/calculos";
-import { avanceEvaluaciones, resumir } from "@/lib/estadisticas";
+import { avanceEvaluaciones, resumenFases, resumir } from "@/lib/estadisticas";
 import { Avatar } from "@/components/avatar";
 import { LogoClase } from "@/components/logo-clase";
 
@@ -55,6 +55,10 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
         horaRegreso: true,
         vientoDir: true,
         vientoNudos: true,
+        tipo: true,
+        corrienteNudos: true,
+        corrienteDir: true,
+        notasFase: { select: { valor: true, faseId: true, fase: { select: { nombre: true, orden: true } } } },
         temas: { where: { realizado: true }, select: { temaId: true } },
         asistencias: { select: { alumnoId: true, presente: true } },
       },
@@ -97,6 +101,14 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
   const porDireccion = new Map<string, number>();
   for (const e of enRango) if (e.vientoDir) porDireccion.set(e.vientoDir, (porDireccion.get(e.vientoDir) ?? 0) + 1);
   const direcciones = [...porDireccion.entries()].sort((a, b) => b[1] - a[1]);
+
+  // --- regatas (días de regata dentro del filtro)
+  const regatas = enRango.filter((e) => e.tipo === "REGATA");
+  const nudosRegata = regatas.map((e) => e.vientoNudos).filter((n): n is number => n !== null);
+  const corrientes = regatas.map((e) => e.corrienteNudos).filter((n): n is number => n !== null);
+  const fasesRegata = resumenFases(
+    regatas.flatMap((e) => e.notasFase.map((n) => ({ faseId: n.faseId, nombre: n.fase.nombre, orden: n.fase.orden, valor: n.valor }))),
+  );
 
   // --- temas
   const filasTemas = barras(
@@ -387,6 +399,62 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
           </ul>
         </section>
       )}
+
+      <section className="caja space-y-4 p-4">
+        <div>
+          <h2 className="flex items-center gap-1.5 font-semibold">
+            <Waves size={16} aria-hidden /> Regatas
+          </h2>
+          <p className="text-sm text-suave">Los días marcados como regata: condiciones y cómo les fue a los chicos en cada fase.</p>
+        </div>
+        {regatas.length === 0 ? (
+          <p className="text-sm text-suave">No hay días de regata en este período. Se marcan en la Jornada, eligiendo "Día de regata".</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-[12px] bg-borde/40 p-3">
+                <p className="text-xs text-suave">Regatas</p>
+                <p className="text-xl font-semibold">{regatas.length}</p>
+              </div>
+              <div className="rounded-[12px] bg-borde/40 p-3">
+                <p className="text-xs text-suave">Viento medio</p>
+                <p className="text-xl font-semibold">{promedio(nudosRegata) === null ? "—" : `${formatoNota(promedio(nudosRegata))} kn`}</p>
+              </div>
+              <div className="rounded-[12px] bg-borde/40 p-3">
+                <p className="text-xs text-suave">Corriente media</p>
+                <p className="text-xl font-semibold">{promedio(corrientes) === null ? "—" : `${formatoNota(promedio(corrientes))} kn`}</p>
+              </div>
+            </div>
+            {fasesRegata.length === 0 ? (
+              <p className="text-sm text-suave">Todavía no se calificó ninguna fase.</p>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-suave">
+                  Lo más flojo primero: <strong className="font-medium text-texto">{fasesRegata[0].nombre}</strong> es la fase que más hay que trabajar.
+                </p>
+                {fasesRegata.map((f) => (
+                  <div key={f.faseId} className="space-y-1.5">
+                    <div className="flex items-baseline justify-between gap-3 text-sm">
+                      <span className="font-medium">{f.nombre}</span>
+                      <span className="text-suave">{f.pctBien}% bien · {f.total} {f.total === 1 ? "calificación" : "calificaciones"}</span>
+                    </div>
+                    <div className="flex h-2.5 overflow-hidden rounded-full bg-borde" role="img" aria-label={`${f.malas} malas, ${f.regulares} regulares, ${f.bien} bien`}>
+                      <div className="bg-peligro" style={{ width: `${(f.malas / f.total) * 100}%` }} />
+                      <div className="bg-alerta" style={{ width: `${(f.regulares / f.total) * 100}%` }} />
+                      <div className="bg-ok" style={{ width: `${(f.bien / f.total) * 100}%` }} />
+                    </div>
+                  </div>
+                ))}
+                <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-suave">
+                  <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-peligro" /> Mala</span>
+                  <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-alerta" /> Regular</span>
+                  <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-ok" /> Bien</span>
+                </p>
+              </div>
+            )}
+          </>
+        )}
+      </section>
 
       {categoria && (
         <section className="caja space-y-1 p-4">

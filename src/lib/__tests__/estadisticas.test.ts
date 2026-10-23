@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resumir, avanceEvaluaciones, type EntrenamientoResumen, type EvaluacionSimple } from "../estadisticas";
+import { resumir, avanceEvaluaciones, resumenFases, type EntrenamientoResumen, type EvaluacionSimple } from "../estadisticas";
 
 const base = { horaBajada: "10:00", horaRegreso: "12:00", presentes: 8, total: 10, temasHechos: [] as string[] };
 
@@ -69,5 +69,19 @@ describe("avanceEvaluaciones", () => {
     const r = avanceEvaluaciones([ev("x", "2026-10-01", 5, 5)]);
     expect(r.comparados).toBe(0);
     expect(r.deltaMedio).toBeNull();
+  });
+});
+
+describe("resumenFases", () => {
+  const n = (faseId: string, orden: number, valor: number) => ({ faseId, nombre: faseId, orden, valor });
+  it("cuenta malas, regulares y bien por fase y ordena las más flojas primero", () => {
+    const r = resumenFases([n("largada", 0, 1), n("largada", 0, 2), n("popa", 4, 3), n("popa", 4, 3), n("popa", 4, 2)]);
+    expect(r.map((f) => f.faseId)).toEqual(["largada", "popa"]);
+    expect(r[0]).toMatchObject({ malas: 1, regulares: 1, bien: 0, total: 2, pctBien: 0, promedio: 1.5 });
+    expect(r[1]).toMatchObject({ malas: 0, regulares: 1, bien: 2, total: 3, pctBien: 67 });
+  });
+  it("ignora valores fuera de 1-3 y tolera la lista vacía", () => {
+    expect(resumenFases([])).toEqual([]);
+    expect(resumenFases([n("x", 0, 9)])).toEqual([]);
   });
 });

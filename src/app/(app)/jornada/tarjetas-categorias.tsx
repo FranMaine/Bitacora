@@ -15,6 +15,7 @@ export type TarjetaCategoria = {
   minutos: number | null;
   viento: string | null;
   estado: Estado;
+  tipo: "ENTRENAMIENTO" | "REGATA";
   temas: string[];
 };
 
@@ -87,6 +88,7 @@ function Tarjeta({ fecha, categoria: c }: { fecha: string; categoria: TarjetaCat
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          {c.tipo === "REGATA" && <span className="chip">Regata</span>}
           <span className={`chip ${chip.clase}`}>{chip.texto}</span>
           <ChevronRight size={18} className="text-suave" aria-hidden />
         </div>

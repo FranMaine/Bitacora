@@ -21,7 +21,7 @@ export default async function PaginaEntrenamiento({ params }: { params: Promise<
   const [entrenamiento, temas] = await Promise.all([
     db.entrenamiento.findUnique({
       where: { fecha_categoriaId: { fecha: fechaDB, categoriaId } },
-      include: { temas: true, asistencias: true },
+      include: { temas: true, asistencias: true, notasFase: true },
     }),
     db.tema.findMany({ where: { activo: true }, orderBy: { orden: "asc" } }),
   ]);
@@ -41,11 +41,19 @@ export default async function PaginaEntrenamiento({ params }: { params: Promise<
     : [];
   const listaTemas = [...temas, ...temasExtra].map((t) => ({ id: t.id, nombre: t.nombre }));
 
+  // Fases de regata: las activas, más las archivadas que ya tienen nota en este día.
+  const idsFasesUsadas = new Set(entrenamiento?.notasFase.map((n) => n.faseId) ?? []);
+  const fases = await db.faseRegata.findMany({
+    where: { OR: [{ activa: true }, { id: { in: [...idsFasesUsadas] } }] },
+    orderBy: { orden: "asc" },
+    select: { id: true, nombre: true },
+  });
+
   return (
     <div className="space-y-5">
       <div>
-        <Link href={`/?fecha=${fecha}`} className="inline-flex items-center gap-1 text-sm text-suave hover:text-texto">
-          <ChevronLeft size={16} aria-hidden /> Volver
+        <Link href={`/jornada?fecha=${fecha}`} className="inline-flex items-center gap-1 text-sm text-suave hover:text-texto">
+          <ChevronLeft size={16} aria-hidden /> Jornada
         </Link>
         <div className="mt-2 flex items-center gap-3">
           <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-acento-suave text-acento" aria-hidden>
@@ -60,7 +68,12 @@ export default async function PaginaEntrenamiento({ params }: { params: Promise<
         categoriaId={categoriaId}
         alumnos={alumnos}
         temas={listaTemas}
+        fases={fases}
         inicial={{
+          tipo: entrenamiento?.tipo === "REGATA" ? "REGATA" : "ENTRENAMIENTO",
+          corrienteDir: entrenamiento?.corrienteDir ?? "",
+          corrienteNudos: entrenamiento?.corrienteNudos != null ? String(entrenamiento.corrienteNudos) : "",
+          califs: Object.fromEntries((entrenamiento?.notasFase ?? []).map((n) => [`${n.alumnoId}|${n.faseId}`, n.valor])),
           plan: entrenamiento?.plan ?? "",
           resumen: entrenamiento?.resumen ?? "",
           horaBajada: entrenamiento?.horaBajada ?? "",
