@@ -413,7 +413,7 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
           <p className="text-sm text-suave">Los días marcados como regata: condiciones y cómo les fue a los chicos en cada fase.</p>
         </div>
         {regatas.length === 0 ? (
-          <p className="text-sm text-suave">No hay días de regata en este período. Se marcan en la Jornada, eligiendo "Día de regata".</p>
+          <p className="text-sm text-suave">No hay días de regata en este período. Se marcan en la Jornada, eligiendo &quot;Día de regata&quot;.</p>
         ) : (
           <>
             <div className="grid grid-cols-3 gap-3">
