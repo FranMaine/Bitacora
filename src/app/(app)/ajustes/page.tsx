@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
+import { BotonConfirmar } from "@/components/boton-confirmar";
 import { cambiarActivoInstructor, cambiarActivoItem, renombrarItem, type TipoCatalogo } from "./actions";
 import { FormularioAgregarItem, FormularioClave, FormularioInstructor } from "./formularios";
 
@@ -27,9 +28,13 @@ function Catalogo({ tipo, titulo, ayuda, placeholder, filas }: { tipo: TipoCatal
               <button type="submit" className="boton !min-h-10 shrink-0 text-sm">Guardar</button>
             </form>
             <form action={cambiarActivoItem.bind(null, tipo, f.id, !f.activo)}>
-              <button type="submit" className={`boton !min-h-10 text-sm ${f.activo ? "boton-peligro" : ""}`}>
-                {f.activo ? "Archivar" : "Reactivar"}
-              </button>
+              {f.activo ? (
+                <BotonConfirmar mensaje={`¿Archivar "${f.nombre}"? Deja de ofrecerse, pero se conserva lo ya cargado.`} className="boton boton-peligro !min-h-10 text-sm">
+                  Archivar
+                </BotonConfirmar>
+              ) : (
+                <button type="submit" className="boton !min-h-10 text-sm">Reactivar</button>
+              )}
             </form>
           </li>
         ))}
@@ -98,9 +103,13 @@ export default async function PaginaAjustes() {
               </div>
               {i.id !== yo.id && (
                 <form action={cambiarActivoInstructor.bind(null, i.id, !i.activo)}>
-                  <button type="submit" className={`boton !min-h-10 text-sm ${i.activo ? "boton-peligro" : ""}`}>
-                    {i.activo ? "Desactivar" : "Reactivar"}
-                  </button>
+                  {i.activo ? (
+                    <BotonConfirmar mensaje={`¿Desactivar a ${i.nombre}? No va a poder ingresar hasta que lo reactives.`} className="boton boton-peligro !min-h-10 text-sm">
+                      Desactivar
+                    </BotonConfirmar>
+                  ) : (
+                    <button type="submit" className="boton !min-h-10 text-sm">Reactivar</button>
+                  )}
                 </form>
               )}
             </li>

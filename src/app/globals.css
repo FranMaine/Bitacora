@@ -74,12 +74,29 @@
 
 html {
   -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  color-scheme: light dark; /* selects, scrollbars y fechas nativos siguen el tema */
+  /* Un tirón hacia abajo no recarga la página: se perdería lo que se estaba cargando. */
+  overscroll-behavior-y: none;
+  /* El encabezado fijo no tapa lo enfocado con el teclado ni los anclajes. */
+  scroll-padding-top: calc(4rem + env(safe-area-inset-top));
+}
+
+/* Los controles no se seleccionan al mantener apretado y no esperan al doble toque. */
+button, a, [role="tab"], label[for], summary {
+  touch-action: manipulation;
+}
+button, [role="tab"], .boton, .chip {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 body {
   background: var(--fondo);
   color: var(--texto);
   font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums; /* los números alinean en tablas y estadísticas */
   /* Espacio para la barra inferior y la zona segura del celular. */
   padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
 }
@@ -97,6 +114,7 @@ body {
   font-weight: 500;
   letter-spacing: -0.015em;
   line-height: 1.05;
+  text-wrap: balance;
 }
 
 @layer components {

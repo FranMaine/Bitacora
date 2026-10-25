@@ -16,7 +16,10 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
 
   return (
     <>
-      <header className="sticky top-0 z-30 border-b border-borde bg-superficie/90 backdrop-blur-md supports-[backdrop-filter]:bg-superficie/75">
+      <a href="#contenido" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-[12px] focus:bg-acento focus:px-4 focus:py-2 focus:text-[#fff]">
+        Saltar al contenido
+      </a>
+      <header className="sticky top-0 z-30 pt-[env(safe-area-inset-top)] border-b border-borde bg-superficie/90 backdrop-blur-md supports-[backdrop-filter]:bg-superficie/75">
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between gap-3 px-4">
           <Link href="/" className="flex items-center gap-2 text-base font-semibold tracking-tight sm:text-lg">
             <Image src="/cvsi.webp" alt="CVSI" width={400} height={207} className="h-7 w-auto" priority />
@@ -38,7 +41,7 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
           </form>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:py-8">{children}</main>
+      <main id="contenido" className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:py-8">{children}</main>
       <Navegacion variante="barra" />
     </>
   );

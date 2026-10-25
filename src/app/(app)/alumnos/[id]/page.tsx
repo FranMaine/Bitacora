@@ -7,6 +7,7 @@ import { requerirInstructor } from "@/lib/auth";
 import { deFechaDB, fechaCorta } from "@/lib/fechas";
 import { formatoDuracion, formatoNota, formatoTendencia, minutosEntre, porcentaje, promedio, rachaAusencias, tendencia } from "@/lib/calculos";
 import { GraficoLinea } from "@/components/grafico-linea";
+import { BotonConfirmar } from "@/components/boton-confirmar";
 import { cambiarEstadoAlumno } from "../actions";
 import { FormularioEdicion } from "./formulario-edicion";
 
@@ -278,9 +279,13 @@ export default async function FichaAlumno({ params }: { params: Promise<{ id: st
       />
 
       <form action={cambiarEstadoAlumno.bind(null, alumno.id, !alumno.activo)}>
-        <button type="submit" className={`boton ${alumno.activo ? "boton-peligro" : ""}`}>
-          {alumno.activo ? "Archivar alumno" : "Reactivar alumno"}
-        </button>
+        {alumno.activo ? (
+          <BotonConfirmar mensaje={`¿Archivar a ${alumno.nombre}? Deja de aparecer en las listas, pero se conserva su historial.`} className="boton boton-peligro">
+            Archivar alumno
+          </BotonConfirmar>
+        ) : (
+          <button type="submit" className="boton">Reactivar alumno</button>
+        )}
         {alumno.activo && (
           <p className="mt-1 text-sm text-suave">Deja de aparecer en las listas, pero se conserva todo su historial.</p>
         )}

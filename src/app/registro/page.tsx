@@ -18,7 +18,7 @@ export default function PaginaRegistro() {
           </Link>
           .
         </p>
-        <FormularioRegistro />
+        <FormularioRegistro pideCodigo={Boolean(process.env.CODIGO_REGISTRO)} />
       </div>
     </main>
   );

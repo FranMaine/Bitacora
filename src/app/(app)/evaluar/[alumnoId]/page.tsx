@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
 import { deFechaDB, hoyAR, fechaLarga } from "@/lib/fechas";
 import { LogoClase } from "@/components/logo-clase";
+import { BotonConfirmar } from "@/components/boton-confirmar";
 import { eliminarEvaluacion } from "./actions";
 import { FormularioEvaluacion } from "./formulario";
 
@@ -80,9 +81,9 @@ export default async function PaginaEvaluarAlumno({
 
       {editando && (
         <form action={eliminarEvaluacion.bind(null, alumnoId, editando.id)}>
-          <button type="submit" className="boton boton-peligro">
+          <BotonConfirmar mensaje="¿Eliminar esta evaluación? No se puede deshacer." className="boton boton-peligro">
             <Trash2 size={16} aria-hidden /> Eliminar esta evaluación
-          </button>
+          </BotonConfirmar>
         </form>
       )}
     </div>

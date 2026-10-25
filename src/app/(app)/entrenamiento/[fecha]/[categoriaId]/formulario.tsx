@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { ChevronDown, Check, Clock, MessageSquare, MessageSquareText, Waves, Wind } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { guardarEntrenamiento, type EstadoEntrenamiento } from "./actions";
@@ -80,6 +80,30 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
   const [calificando, setCalificando] = useState<Set<string>>(() => new Set());
 
   const esRegata = tipo === "REGATA";
+
+  // Cambios sin guardar: se compara todo lo cargado contra lo último guardado. Mientras haya
+  // diferencias, el navegador avisa antes de cerrar o recargar (cargar una jornada lleva trabajo).
+  const instantanea = JSON.stringify([
+    tipo, bajada, regreso, vientoDir, vientoNudos, corrienteDir, corrienteNudos, plan, resumen,
+    [...presentes].sort(), [...temasPlan].sort(), [...temasHecho].sort(), notas, califs,
+  ]);
+  const [base, setBase] = useState(instantanea);
+  const sinGuardar = instantanea !== base;
+  // Cuando llega un resultado nuevo de guardado, lo cargado pasa a ser la nueva base.
+  const [estadoVisto, setEstadoVisto] = useState(estado);
+  if (estado !== estadoVisto) {
+    setEstadoVisto(estado);
+    if (estado.guardado) setBase(instantanea);
+  }
+  useEffect(() => {
+    if (!sinGuardar) return;
+    const avisar = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", avisar);
+    return () => window.removeEventListener("beforeunload", avisar);
+  }, [sinGuardar]);
   const minutos = minutosEntre(bajada, regreso);
   const todos = alumnos.length > 0 && presentes.size === alumnos.length;
 
@@ -372,6 +396,9 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
       {seccionPlanYTemas}
       {seccionResumen}
 
+      {sinGuardar && !estado.error && (
+        <p className="text-sm text-alerta">Hay cambios sin guardar.</p>
+      )}
       {estado.error && <p role="alert" className="confirmar text-sm text-peligro">{estado.error}</p>}
       {estado.guardado && (
         <p role="status" className="confirmar flex items-center gap-1.5 text-sm text-ok">

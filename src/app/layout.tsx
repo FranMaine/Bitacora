@@ -32,6 +32,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // Con la app instalada, el contenido llega hasta el borde (muesca, barra inferior): se compensa con env(safe-area-inset-*).
+  viewportFit: "cover",
+  // En Android el teclado achica el área visible, así los botones fijos no quedan tapados.
+  interactiveWidget: "resizes-content",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f6f7f8" },
     { media: "(prefers-color-scheme: dark)", color: "#0b1013" },
@@ -40,7 +44,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${geist.variable} ${playfair.variable} h-full antialiased`}>
+    <html lang="es-AR" className={`${geist.variable} ${playfair.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         {children}
         <RegistrarSW />

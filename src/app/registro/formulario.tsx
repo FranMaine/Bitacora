@@ -3,11 +3,17 @@
 import { useActionState } from "react";
 import { registrarse, type EstadoRegistro } from "./actions";
 
-export function FormularioRegistro() {
+export function FormularioRegistro({ pideCodigo }: { pideCodigo: boolean }) {
   const [estado, accion, pendiente] = useActionState<EstadoRegistro, FormData>(registrarse, {});
 
   return (
     <form action={accion} className="mt-8 space-y-4">
+      {pideCodigo && (
+        <div>
+          <label htmlFor="codigo" className="etiqueta">Código de invitación</label>
+          <input id="codigo" name="codigo" type="text" autoComplete="off" autoCapitalize="none" spellCheck={false} required className="campo" />
+        </div>
+      )}
       <div>
         <label htmlFor="nombre" className="etiqueta">Nombre y apellido</label>
         <input id="nombre" name="nombre" type="text" autoComplete="name" required className="campo" />
