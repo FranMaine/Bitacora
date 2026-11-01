@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { minutosEntre, formatoDuracion, porcentaje, promedio, formatoNota, rachaAusencias, barras, diasEntre, horaValida, textoViento, direccionVientoValida, tendencia, formatoTendencia, textoCorriente } from "../calculos";
-import { hoyAR, aFechaDB, sumarDias, periodoAnterior, periodoSiguiente, periodoCorto, nombrePeriodo, fechaLarga } from "../fechas";
+import { hoyAR, aFechaDB, sumarDias, periodoAnterior, periodoSiguiente, periodoCorto, etiquetasMeses, nombrePeriodo, fechaLarga } from "../fechas";
 
 describe("minutosEntre", () => {
   it("calcula la duración entre bajada y regreso", () => {
@@ -112,5 +112,12 @@ describe("textoCorriente", () => {
     expect(textoCorriente(null, 1)).toBe("1 kn");
     expect(textoCorriente("SO", null)).toBe("SO");
     expect(textoCorriente(null, null)).toBeNull();
+  });
+});
+
+describe("etiquetasMeses", () => {
+  it("pone el año solo en la primera etiqueta y al cambiar de año", () => {
+    expect(etiquetasMeses(["2026-10", "2026-11", "2026-12", "2027-01", "2027-02"])).toEqual(["oct 26", "nov", "dic", "ene 27", "feb"]);
+    expect(etiquetasMeses([])).toEqual([]);
   });
 });

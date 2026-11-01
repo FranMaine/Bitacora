@@ -78,3 +78,16 @@ export function periodoSiguiente(periodo: string): string {
   const [a, m] = periodo.split("-").map(Number);
   return m === 12 ? `${a + 1}-01` : `${a}-${String(m + 1).padStart(2, "0")}`;
 }
+
+/**
+ * Etiquetas cortas para un eje de meses: "feb", "mar"... y el año ("feb 26") solo en la primera y cuando
+ * cambia (en enero), así no se amontonan las letras.
+ */
+export function etiquetasMeses(periodos: string[]): string[] {
+  return periodos.map((p, i) => {
+    const corto = periodoCorto(p); // "oct 26"
+    const [mesLargo, anio] = corto.split(" ");
+    const mes = mesLargo.slice(0, 3); // "sept" -> "sep": todas de 3 letras
+    return i === 0 || p.endsWith("-01") || periodos[i - 1].slice(0, 4) !== p.slice(0, 4) ? `${mes} ${anio}` : mes;
+  });
+}

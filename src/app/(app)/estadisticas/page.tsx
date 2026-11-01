@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, Download, Waves, Wind } from "lucide-react";
 import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
-import { deFechaDB, fechaCorta, hoyAR, nombrePeriodo, periodoActual, periodoCorto, periodoAnterior, periodoDe, periodoSiguiente, periodoValido } from "@/lib/fechas";
+import { deFechaDB, etiquetasMeses, fechaCorta, hoyAR, nombrePeriodo, periodoActual, periodoAnterior, periodoDe, periodoSiguiente, periodoValido } from "@/lib/fechas";
 import {
   barras,
   diasEntre,
@@ -205,6 +205,11 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
     return { mes: m, salidas: rm.cantidad, asistencia: rm.asistenciaPct, viento: promedio(n), nota: promedio(notasMes) };
   });
 
+  const serieAsistencia = serieMensual.filter((m) => m.asistencia !== null);
+  const etiquetasAsistencia = etiquetasMeses(serieAsistencia.map((m) => m.mes));
+  const serieNota = serieMensual.filter((m) => m.nota !== null);
+  const etiquetasNota = etiquetasMeses(serieNota.map((m) => m.mes));
+
   const q = (p: { mes?: string; categoria?: string | null }) => {
     const parametros = new URLSearchParams();
     parametros.set("mes", p.mes ?? (todo ? "todo" : periodo));
@@ -349,7 +354,7 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
                 max={100}
                 marcas={[0, 50, 100]}
                 sufijo="%"
-                puntos={serieMensual.filter((m) => m.asistencia !== null).map((m) => ({ etiqueta: periodoCorto(m.mes), valor: m.asistencia! }))}
+                puntos={serieAsistencia.map((m, i) => ({ etiqueta: etiquetasAsistencia[i], valor: m.asistencia! }))}
               />
             </div>
           )}
@@ -358,7 +363,7 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
               <p className="mb-1 text-xs font-medium text-suave">Nota promedio por mes</p>
               <GraficoLinea
                 titulo="Nota promedio por mes"
-                puntos={serieMensual.filter((m) => m.nota !== null).map((m) => ({ etiqueta: periodoCorto(m.mes), valor: m.nota! }))}
+                puntos={serieNota.map((m, i) => ({ etiqueta: etiquetasNota[i], valor: m.nota! }))}
               />
             </div>
           )}
