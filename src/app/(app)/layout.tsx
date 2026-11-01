@@ -3,6 +3,7 @@ import Image from "next/image";
 import { requerirInstructor } from "@/lib/auth";
 import { cerrarSesion } from "@/app/login/actions";
 import { Navegacion } from "@/components/navegacion";
+import { BotonTema } from "@/components/boton-tema";
 
 export default async function LayoutApp({ children }: { children: React.ReactNode }) {
   const instructor = await requerirInstructor();
@@ -27,6 +28,7 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
           </Link>
           <Navegacion variante="superior" />
           <form action={cerrarSesion} className="flex items-center gap-2">
+            <BotonTema />
             <span className="hidden text-sm text-suave sm:inline">{instructor.nombre}</span>
             <span
               className="flex size-8 items-center justify-center rounded-full bg-acento-suave text-xs font-semibold text-acento sm:hidden"

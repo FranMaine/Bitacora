@@ -42,9 +42,15 @@ export const viewport: Viewport = {
   ],
 };
 
+const SCRIPT_TEMA = `(function(){try{var t=localStorage.getItem("tema");if(t!=="light"&&t!=="dark"){t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}document.documentElement.setAttribute("data-theme",t);var c=t==="dark"?"#0b1013":"#f6f7f8";document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.setAttribute("content",c)})}catch(e){}})();`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es-AR" className={`${geist.variable} ${playfair.variable} h-full antialiased`}>
+    <html lang="es-AR" className={`${geist.variable} ${playfair.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        {/* Antes de pintar: tema elegido con el botón sol/luna o, si no hay, el del sistema (sin parpadeo). */}
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} />
+      </head>
       <body className="min-h-full flex flex-col">
         {children}
         <RegistrarSW />
