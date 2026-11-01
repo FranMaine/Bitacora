@@ -16,9 +16,12 @@ function haceCuanto(dias: number): string {
   return `hace ${meses} ${meses === 1 ? "mes" : "meses"}`;
 }
 
-export default async function PaginaEvaluar({ searchParams }: { searchParams: Promise<{ categoria?: string }> }) {
+// Se considera pendiente a quien no tiene ninguna evaluación en los últimos 30 días.
+const DIAS_PENDIENTE = 30;
+
+export default async function PaginaEvaluar({ searchParams }: { searchParams: Promise<{ categoria?: string; pendientes?: string }> }) {
   await requerirInstructor();
-  const { categoria: categoriaPedida } = await searchParams;
+  const { categoria: categoriaPedida, pendientes: soloPendientes } = await searchParams;
 
   const categorias = await db.categoria.findMany({ where: { activa: true }, orderBy: { orden: "asc" } });
   const categoriaId = categorias.find((c) => c.id === categoriaPedida)?.id ?? categorias[0]?.id;
@@ -31,6 +34,13 @@ export default async function PaginaEvaluar({ searchParams }: { searchParams: Pr
       })
     : [];
   const hoy = hoyAR();
+  const esPendiente = (a: (typeof alumnos)[number]) => {
+    const ultima = a.evaluaciones.at(-1);
+    return !ultima || diasEntre(deFechaDB(ultima.fecha), hoy) > DIAS_PENDIENTE;
+  };
+  const pendientes = alumnos.filter(esPendiente);
+  const visibles = soloPendientes ? pendientes : alumnos;
+  const enlaceCat = (id: string, pend: boolean) => `/evaluar?categoria=${id}${pend ? "&pendientes=1" : ""}`;
 
   return (
     <div className="space-y-5">
@@ -47,7 +57,7 @@ export default async function PaginaEvaluar({ searchParams }: { searchParams: Pr
           {categorias.map((c) => (
             <Link
               key={c.id}
-              href={`/evaluar?categoria=${c.id}`}
+              href={enlaceCat(c.id, Boolean(soloPendientes))}
               role="tab"
               aria-selected={c.id === categoriaId}
               className="group shrink-0 whitespace-nowrap px-1 py-2.5 text-sm font-medium text-suave transition-colors duration-[160ms] aria-selected:text-acento hover:text-texto aria-selected:hover:text-acento"
@@ -66,8 +76,21 @@ export default async function PaginaEvaluar({ searchParams }: { searchParams: Pr
         (alumnos.length === 0 ? (
           <p className="caja p-4 text-suave">Esta categoría no tiene alumnos todavía.</p>
         ) : (
-          <ul className="caja divide-y divide-borde">
-            {alumnos.map((a) => {
+          <>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm text-suave">
+                {pendientes.length === 0
+                  ? "Todos al día: evaluados en los últimos 30 días."
+                  : `${pendientes.length} de ${alumnos.length} sin evaluar hace más de 30 días.`}
+              </p>
+              {pendientes.length > 0 && (
+                <Link href={enlaceCat(categoriaId, !soloPendientes)} className="boton !min-h-9 text-sm">
+                  {soloPendientes ? "Ver todos" : "Ver solo pendientes"}
+                </Link>
+              )}
+            </div>
+            <ul className="caja divide-y divide-borde">
+            {visibles.map((a) => {
               const notas = a.evaluaciones.map((e) => promedio(e.items.map((i) => i.valor))).filter((n): n is number => n !== null);
               const ultima = a.evaluaciones.at(-1);
               const delta = formatoTendencia(tendencia(notas));
@@ -99,7 +122,8 @@ export default async function PaginaEvaluar({ searchParams }: { searchParams: Pr
                 </li>
               );
             })}
-          </ul>
+            </ul>
+          </>
         ))}
     </div>
   );

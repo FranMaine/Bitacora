@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Waves, Wind } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Waves, Wind } from "lucide-react";
 import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
-import { deFechaDB, fechaCorta, hoyAR, nombrePeriodo, periodoActual, periodoAnterior, periodoDe, periodoSiguiente, periodoValido } from "@/lib/fechas";
+import { deFechaDB, fechaCorta, hoyAR, nombrePeriodo, periodoActual, periodoCorto, periodoAnterior, periodoDe, periodoSiguiente, periodoValido } from "@/lib/fechas";
 import {
   barras,
   diasEntre,
@@ -17,6 +17,7 @@ import {
 } from "@/lib/calculos";
 import { avanceEvaluaciones, resumenFases, resumir } from "@/lib/estadisticas";
 import { Avatar } from "@/components/avatar";
+import { GraficoLinea } from "@/components/grafico-linea";
 import { LogoClase } from "@/components/logo-clase";
 
 export const metadata = { title: "Estadísticas" };
@@ -192,7 +193,7 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
     ...new Set([...entrenos.map((e) => periodoDe(deFechaDB(e.fecha))), ...evalsCategoria.map((e) => periodoDe(deFechaDB(e.fecha)))]),
   ]
     .sort()
-    .slice(-6);
+    .slice(-9);
   const serieMensual = meses.map((m) => {
     const es = entrenos.filter((e) => periodoDe(deFechaDB(e.fecha)) === m);
     const rm = resumir(es.map(aResumen));
@@ -251,6 +252,16 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
           </Link>
         </div>
         <Link href={q({ mes: periodoSiguiente(periodo) })} className="boton" aria-label="Mes siguiente"><ChevronRight size={18} aria-hidden /></Link>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm text-suave">Descargar para Excel:</span>
+        <a href={`/api/exportar?tipo=asistencia${categoria ? `&categoria=${categoria.id}` : ""}`} className="boton !min-h-9 text-sm" download>
+          <Download size={15} aria-hidden /> Asistencia
+        </a>
+        <a href={`/api/exportar?tipo=evaluaciones${categoria ? `&categoria=${categoria.id}` : ""}`} className="boton !min-h-9 text-sm" download>
+          <Download size={15} aria-hidden /> Evaluaciones
+        </a>
       </div>
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -329,6 +340,28 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
             <h2 className="font-semibold">Mes a mes</h2>
             <p className="text-sm text-suave">Cómo viene cambiando {categoria ? categoria.nombre : "todo el club"} en los últimos meses.</p>
           </div>
+          {serieMensual.some((m) => m.asistencia !== null) && (
+            <div>
+              <p className="mb-1 text-xs font-medium text-suave">Asistencia por mes</p>
+              <GraficoLinea
+                titulo="Asistencia por mes"
+                min={0}
+                max={100}
+                marcas={[0, 50, 100]}
+                sufijo="%"
+                puntos={serieMensual.filter((m) => m.asistencia !== null).map((m) => ({ etiqueta: periodoCorto(m.mes), valor: m.asistencia! }))}
+              />
+            </div>
+          )}
+          {serieMensual.some((m) => m.nota !== null) && (
+            <div>
+              <p className="mb-1 text-xs font-medium text-suave">Nota promedio por mes</p>
+              <GraficoLinea
+                titulo="Nota promedio por mes"
+                puntos={serieMensual.filter((m) => m.nota !== null).map((m) => ({ etiqueta: periodoCorto(m.mes), valor: m.nota! }))}
+              />
+            </div>
+          )}
           <div className="overflow-x-auto">
             <table className="w-full min-w-[20rem] text-sm">
               <thead>

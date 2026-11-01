@@ -29,6 +29,10 @@ export default async function PaginaHoy({ searchParams }: { searchParams: Promis
     }),
     db.alumno.groupBy({ by: ["categoriaId"], where: { activo: true }, _count: true }),
   ]);
+  // Chicos sin ninguna evaluación en los últimos 30 días (aviso al pie de la jornada).
+  const sinEvaluar = await db.alumno.count({
+    where: { activo: true, evaluaciones: { none: { fecha: { gte: aFechaDB(sumarDias(hoy, -30))! } } } },
+  });
   const cantidad = new Map(alumnosPorCategoria.map((a) => [a.categoriaId, a._count]));
   const porCategoria = new Map(entrenamientos.map((e) => [e.categoriaId, e]));
 
@@ -158,6 +162,17 @@ export default async function PaginaHoy({ searchParams }: { searchParams: Promis
             };
           })}
         />
+      )}
+      {sinEvaluar > 0 && (
+        <Link href="/evaluar?pendientes=1" className="caja caja-link flex items-center justify-between gap-3 p-4">
+          <div>
+            <p className="font-semibold">Evaluaciones pendientes</p>
+            <p className="text-sm text-suave">
+              {sinEvaluar} {sinEvaluar === 1 ? "chico" : "chicos"} sin evaluar hace más de 30 días.
+            </p>
+          </div>
+          <ChevronRight size={18} className="shrink-0 text-suave" aria-hidden />
+        </Link>
       )}
     </div>
   );
