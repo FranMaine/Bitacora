@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
 
 export type EstadoAjustes = { error?: string; ok?: string };
-export type TipoCatalogo = "categoria" | "tema" | "criterio" | "fase";
+export type TipoCatalogo = "categoria" | "tema" | "criterio" | "fase" | "embarcacion";
 
 const Nombre = z.string().trim().min(2, "El nombre es muy corto").max(60, "El nombre es muy largo");
 
@@ -27,6 +27,9 @@ async function crear(tipo: TipoCatalogo, nombre: string) {
   } else if (tipo === "fase") {
     const orden = ((await db.faseRegata.aggregate({ _max: { orden: true } }))._max.orden ?? -1) + 1;
     await db.faseRegata.create({ data: { ...data, orden } });
+  } else if (tipo === "embarcacion") {
+    const orden = ((await db.embarcacion.aggregate({ _max: { orden: true } }))._max.orden ?? -1) + 1;
+    await db.embarcacion.create({ data: { ...data, orden } });
   } else {
     const orden = ((await db.criterio.aggregate({ _max: { orden: true } }))._max.orden ?? -1) + 1;
     await db.criterio.create({ data: { ...data, orden } });
@@ -40,6 +43,8 @@ async function actualizar(tipo: TipoCatalogo, id: string, data: { nombre?: strin
     await db.tema.update({ where: { id }, data });
   } else if (tipo === "fase") {
     await db.faseRegata.update({ where: { id }, data: { nombre: data.nombre, activa: data.activo } });
+  } else if (tipo === "embarcacion") {
+    await db.embarcacion.update({ where: { id }, data: { nombre: data.nombre, activa: data.activo } });
   } else {
     await db.criterio.update({ where: { id }, data });
   }
@@ -56,6 +61,7 @@ export async function agregarItem(tipo: TipoCatalogo, _previo: EstadoAjustes, fo
     throw e;
   }
   revalidatePath("/ajustes");
+  if (tipo === "embarcacion") revalidatePath("/gomon");
   return { ok: "Agregado." };
 }
 

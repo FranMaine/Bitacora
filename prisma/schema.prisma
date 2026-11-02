@@ -19,6 +19,8 @@ model Instructor {
 
   entrenamientos Entrenamiento[]
   evaluaciones   Evaluacion[]
+  mantenimientosCreados   Mantenimiento[] @relation("MantenimientoCreadoPor")
+  mantenimientosResueltos Mantenimiento[] @relation("MantenimientoResueltoPor")
 }
 
 // Grupo de alumnos (se distinguen por categoría): "Optimist Principiantes", "ILCA 4"...
@@ -83,6 +85,11 @@ model Entrenamiento {
   // Viento del día: dirección de donde sopla (N, NE, E, SE, S, SO, O, NO) y
   // intensidad en nudos. Ambos opcionales.
   vientoDir   String?
+  // Intensidad: BAJOS | MEDIOS | FUERTES | MEDIOS_FUERTES | FUERTES_MEDIOS
+  vientoFuerza String?
+  // CONSTANTE | OSCILANTE
+  vientoEstabilidad String?
+  // Legado (cuando se cargaba en nudos): ya no se usa en la app.
   vientoNudos Int?
   // ENTRENAMIENTO (lo de siempre) o REGATA (día de regata: además del viento se
   // anota la corriente y se califica a cada chico por fase de la regata).
@@ -187,4 +194,40 @@ model NotaFase {
 
   @@id([entrenamientoId, alumnoId, faseId])
   @@index([alumnoId])
+}
+
+// Gomones / botes de apoyo del club (editable en Ajustes).
+model Embarcacion {
+  id     String  @id @default(cuid())
+  nombre String  @unique
+  orden  Int     @default(0)
+  activa Boolean @default(true)
+
+  mantenimientos Mantenimiento[]
+}
+
+// Observación de mantenimiento de una embarcación: queda PENDIENTE hasta que se marca como ARREGLADA.
+// Todas juntas forman el historial del bote.
+model Mantenimiento {
+  id            String      @id @default(cuid())
+  embarcacionId String
+  embarcacion   Embarcacion @relation(fields: [embarcacionId], references: [id])
+  // día en que se vio el problema
+  fecha         DateTime    @db.Date
+  descripcion   String
+  urgente       Boolean     @default(false)
+  // PENDIENTE | ARREGLADO
+  estado        String      @default("PENDIENTE")
+  creadoPorId   String
+  creadoPor     Instructor  @relation("MantenimientoCreadoPor", fields: [creadoPorId], references: [id])
+  // cuando se arregló: día, quién y qué se hizo
+  resueltoEn    DateTime?   @db.Date
+  resueltoPorId String?
+  resueltoPor   Instructor? @relation("MantenimientoResueltoPor", fields: [resueltoPorId], references: [id])
+  solucion      String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([embarcacionId, fecha])
+  @@index([estado])
 }

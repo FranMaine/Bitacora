@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import ExcelJS from "exceljs";
-import { libroAsistencia, libroEvaluaciones, type FilaAsistencia, type FilaEvaluacion } from "../excel";
+import { libroAsistencia, libroEvaluaciones, libroMantenimiento, type FilaAsistencia, type FilaEvaluacion } from "../excel";
 
 async function recargar(libro: ExcelJS.Workbook): Promise<ExcelJS.Workbook> {
   const copia = new ExcelJS.Workbook();
@@ -101,5 +101,24 @@ describe("libroEvaluaciones", () => {
   it("sin evaluaciones deja el aviso", async () => {
     const libro = await recargar(libroEvaluaciones([], criterios));
     expect(libro.getWorksheet("Evaluaciones")!.getCell("A2").value).toMatch(/Todavía no hay/);
+  });
+});
+
+describe("libroMantenimiento", () => {
+  it("arma la tabla con pendientes y arreglados, y sobrevive a recargarse", async () => {
+    const libro = await recargar(
+      libroMantenimiento("Gomón", [
+        { fecha: "2026-11-02", descripcion: "Pierde aire el flotador", urgente: true, estado: "Pendiente", cargo: "Fran", resueltoEn: null, dias: 3, solucion: null, arreglo: null },
+        { fecha: "2026-10-01", descripcion: "Motor se ahoga", urgente: false, estado: "Arreglado", cargo: "Fran", resueltoEn: "2026-10-05", dias: 4, solucion: "Limpieza de carburador", arreglo: "Ana" },
+      ]),
+    );
+    const hoja = libro.getWorksheet("Gomón")!;
+    expect(hoja.rowCount).toBe(3);
+    expect(hoja.getCell("D2").value).toBe("Pendiente");
+    expect(hoja.getCell("H3").value).toBe("Limpieza de carburador");
+  });
+  it("sin datos deja el aviso en vez de una tabla vacía", async () => {
+    const hoja = (await recargar(libroMantenimiento("Gomón", []))).getWorksheet("Gomón")!;
+    expect(hoja.getCell("A2").value).toBe("Todavía no hay observaciones cargadas.");
   });
 });

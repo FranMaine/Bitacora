@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Waves, Wind } from "lucide-react";
+import { ChevronLeft, ChevronRight, Waves, Wind, Wrench } from "lucide-react";
 import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
 import { aFechaDB, fechaLarga, hoyAR, sumarDias } from "@/lib/fechas";
-import { formatoDuracion, formatoNota, minutosEntre, porcentaje, promedio, textoCorriente, textoViento } from "@/lib/calculos";
+import { formatoDuracion, minutosEntre, porcentaje, promedio, textoCorriente, textoViento } from "@/lib/calculos";
 import { resumenFases } from "@/lib/estadisticas";
 import { SelectorFecha } from "@/components/selector-fecha";
 import { TarjetasCategorias } from "./tarjetas-categorias";
@@ -30,6 +30,10 @@ export default async function PaginaHoy({ searchParams }: { searchParams: Promis
     db.alumno.groupBy({ by: ["categoriaId"], where: { activo: true }, _count: true }),
   ]);
   // Chicos sin ninguna evaluación en los últimos 30 días (aviso al pie de la jornada).
+  const [pendientesGomon, urgentesGomon] = await Promise.all([
+    db.mantenimiento.count({ where: { estado: "PENDIENTE", embarcacion: { activa: true } } }),
+    db.mantenimiento.count({ where: { estado: "PENDIENTE", urgente: true, embarcacion: { activa: true } } }),
+  ]);
   const sinEvaluar = await db.alumno.count({
     where: { activo: true, evaluaciones: { none: { fecha: { gte: aFechaDB(sumarDias(hoy, -30))! } } } },
   });
@@ -41,9 +45,8 @@ export default async function PaginaHoy({ searchParams }: { searchParams: Promis
   const minutosDia = hechos.reduce((s, e) => s + (minutosEntre(e.horaBajada, e.horaRegreso) ?? 0), 0);
   const presentesDia = hechos.reduce((s, e) => s + e.asistencias.filter((a) => a.presente).length, 0);
   const listadosDia = hechos.reduce((s, e) => s + e.asistencias.length, 0);
-  const vientoDia = promedio(hechos.map((e) => e.vientoNudos).filter((n): n is number => n !== null));
   const corrienteDia = promedio(hechos.map((e) => e.corrienteNudos).filter((n): n is number => n !== null));
-  const direccionesDia = [...new Set(hechos.map((e) => e.vientoDir).filter((d): d is string => !!d))];
+  const vientoDia = [...new Set(hechos.map((e) => textoViento(e.vientoDir, e.vientoFuerza, e.vientoEstabilidad)).filter((t): t is string => !!t))].join(" / ");
   const temasDia = [...new Set(hechos.flatMap((e) => e.temas.filter((t) => t.realizado).map((t) => t.tema.nombre)))];
   const fasesDia = resumenFases(
     hechos.filter((e) => e.tipo === "REGATA").flatMap((e) => e.notasFase.map((n) => ({ faseId: n.faseId, nombre: n.fase.nombre, orden: n.fase.orden, valor: n.valor }))),
@@ -103,7 +106,7 @@ export default async function PaginaHoy({ searchParams }: { searchParams: Promis
                 <div>
                   <p className="text-xs text-suave">Viento</p>
                   <p className="font-semibold">
-                    {vientoDia === null && direccionesDia.length === 0 ? "—" : `${direccionesDia.join("/")}${direccionesDia.length && vientoDia !== null ? " " : ""}${vientoDia !== null ? `${formatoNota(vientoDia)} kn` : ""}`}
+                    {vientoDia || "—"}
                   </p>
                 </div>
               </div>
@@ -154,7 +157,7 @@ export default async function PaginaHoy({ searchParams }: { searchParams: Promis
               total: cantidad.get(c.id) ?? 0,
               presentes: e?.asistencias.filter((a) => a.presente).length ?? 0,
               minutos: e ? minutosEntre(e.horaBajada, e.horaRegreso) : null,
-              viento: e ? textoViento(e.vientoDir, e.vientoNudos) : null,
+              viento: e ? textoViento(e.vientoDir, e.vientoFuerza, e.vientoEstabilidad) : null,
               corriente: e ? textoCorriente(e.corrienteDir, e.corrienteNudos) : null,
               tipo: e?.tipo === "REGATA" ? "REGATA" : "ENTRENAMIENTO",
               estado: e?.realizado ? "realizado" : e ? "planificado" : "sin_cargar",
@@ -162,6 +165,21 @@ export default async function PaginaHoy({ searchParams }: { searchParams: Promis
             };
           })}
         />
+      )}
+      {pendientesGomon > 0 && (
+        <Link href="/gomon" className="caja caja-link flex items-center justify-between gap-3 p-4">
+          <div className="flex items-center gap-3">
+            <Wrench size={18} className={urgentesGomon ? "text-peligro" : "text-alerta"} aria-hidden />
+            <div>
+              <p className="font-semibold">Mantenimiento pendiente</p>
+              <p className="text-sm text-suave">
+                {pendientesGomon} {pendientesGomon === 1 ? "observación" : "observaciones"} sin arreglar
+                {urgentesGomon > 0 && ` (${urgentesGomon} ${urgentesGomon === 1 ? "urgente" : "urgentes"})`}.
+              </p>
+            </div>
+          </div>
+          <ChevronRight size={18} className="shrink-0 text-suave" aria-hidden />
+        </Link>
       )}
       {sinEvaluar > 0 && (
         <Link href="/evaluar?pendientes=1" className="caja caja-link flex items-center justify-between gap-3 p-4">

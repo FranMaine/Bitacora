@@ -5,7 +5,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
 import { aFechaDB } from "@/lib/fechas";
-import { direccionVientoValida, horaValida } from "@/lib/calculos";
+import { direccionVientoValida, estabilidadVientoValida, fuerzaVientoValida, horaValida } from "@/lib/calculos";
 
 export type EstadoEntrenamiento = { error?: string; guardado?: "plan" | "realizado" };
 
@@ -14,10 +14,8 @@ const Texto = z.string().trim().max(4000);
 
 const Datos = z.object({
   vientoDir: z.string().trim().refine((d) => d === "" || direccionVientoValida(d), "Dirección de viento inválida"),
-  vientoNudos: z
-    .string()
-    .trim()
-    .refine((n) => n === "" || (/^\d{1,2}$/.test(n) && Number(n) <= 80), "Los nudos van de 0 a 80"),
+  vientoFuerza: z.string().trim().refine((v) => v === "" || fuerzaVientoValida(v), "Intensidad de viento inválida"),
+  vientoEstabilidad: z.string().trim().refine((v) => v === "" || estabilidadVientoValida(v), "Tipo de viento inválido"),
   tipo: z.enum(["ENTRENAMIENTO", "REGATA"]),
   corrienteDir: z.string().trim().refine((d) => d === "" || direccionVientoValida(d), "Dirección de corriente inválida"),
   corrienteNudos: z
@@ -42,7 +40,8 @@ export async function guardarEntrenamiento(
 
   const parsed = Datos.safeParse({
     vientoDir: formData.get("vientoDir") ?? "",
-    vientoNudos: formData.get("vientoNudos") ?? "",
+    vientoFuerza: formData.get("vientoFuerza") ?? "",
+    vientoEstabilidad: formData.get("vientoEstabilidad") ?? "",
     tipo: formData.get("tipo") ?? "ENTRENAMIENTO",
     corrienteDir: formData.get("corrienteDir") ?? "",
     corrienteNudos: formData.get("corrienteNudos") ?? "",
@@ -52,7 +51,7 @@ export async function guardarEntrenamiento(
     horaRegreso: formData.get("horaRegreso") ?? "",
   });
   if (!parsed.success) return { error: parsed.error.issues[0].message + "." };
-  const { plan, resumen, horaBajada, horaRegreso, vientoDir, vientoNudos, tipo, corrienteDir, corrienteNudos } = parsed.data;
+  const { plan, resumen, horaBajada, horaRegreso, vientoDir, vientoFuerza, vientoEstabilidad, tipo, corrienteDir, corrienteNudos } = parsed.data;
   if (horaBajada && horaRegreso && horaRegreso <= horaBajada) {
     return { error: "El regreso tiene que ser posterior a la bajada al agua." };
   }
@@ -95,7 +94,8 @@ export async function guardarEntrenamiento(
     horaBajada: horaBajada || null,
     horaRegreso: horaRegreso || null,
     vientoDir: vientoDir || null,
-    vientoNudos: vientoNudos === "" ? null : Number(vientoNudos),
+    vientoFuerza: vientoFuerza || null,
+    vientoEstabilidad: vientoEstabilidad || null,
     tipo,
     corrienteDir: corrienteDir || null,
     corrienteNudos: corrienteNudos === "" ? null : Number(corrienteNudos.replace(",", ".")),

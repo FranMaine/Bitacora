@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { minutosEntre, formatoDuracion, porcentaje, promedio, formatoNota, rachaAusencias, barras, diasEntre, horaValida, textoViento, direccionVientoValida, tendencia, formatoTendencia, textoCorriente } from "../calculos";
+import { minutosEntre, formatoDuracion, porcentaje, promedio, formatoNota, rachaAusencias, barras, diasEntre, horaValida, textoViento, direccionVientoValida, tendencia, formatoTendencia, textoCorriente, nombreDireccion, fuerzaVientoValida, estabilidadVientoValida, masFrecuente } from "../calculos";
 import { hoyAR, aFechaDB, sumarDias, periodoAnterior, periodoSiguiente, periodoCorto, etiquetasMeses, nombrePeriodo, fechaLarga } from "../fechas";
 
 describe("minutosEntre", () => {
@@ -86,11 +86,24 @@ describe("fechas", () => {
 
 describe("viento y tendencia", () => {
   it("textoViento arma el texto con lo que haya", () => {
-    expect(textoViento("SE", 12)).toBe("SE 12 kn");
-    expect(textoViento("SE", null)).toBe("SE");
-    expect(textoViento(null, 8)).toBe("8 kn");
-    expect(textoViento(null, null)).toBeNull();
-    expect(textoViento("", 0)).toBe("0 kn");
+    expect(textoViento("SE", "MEDIOS", "OSCILANTE")).toBe("Sudeste · medios · oscilante");
+    expect(textoViento("N", "FUERTES_MEDIOS", null)).toBe("Norte · fuertes/medios");
+    expect(textoViento(null, "BAJOS", "CONSTANTE")).toBe("bajos · constante");
+    expect(textoViento("O", null, null)).toBe("Oeste");
+    expect(textoViento(null, null, null)).toBeNull();
+    expect(textoViento("", "", "")).toBeNull();
+  });
+  it("nombres y valores válidos", () => {
+    expect(nombreDireccion("NO")).toBe("Noroeste");
+    expect(fuerzaVientoValida("MEDIOS_FUERTES")).toBe(true);
+    expect(fuerzaVientoValida("12")).toBe(false);
+    expect(estabilidadVientoValida("OSCILANTE")).toBe(true);
+    expect(estabilidadVientoValida("x")).toBe(false);
+  });
+  it("masFrecuente", () => {
+    expect(masFrecuente(["A", "B", "B", null, "A", "B"])).toBe("B");
+    expect(masFrecuente(["X", "Y"])).toBe("X");
+    expect(masFrecuente([null, undefined])).toBeNull();
   });
   it("direccionVientoValida", () => {
     expect(direccionVientoValida("NO")).toBe(true);

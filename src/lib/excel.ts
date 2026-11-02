@@ -455,3 +455,68 @@ function columnaLetra(n: number): string {
   }
   return s;
 }
+
+// =====================================================================================
+// MANTENIMIENTO DE EMBARCACIONES
+// =====================================================================================
+
+export type FilaMantenimiento = {
+  fecha: string; // día en que se vio el problema
+  descripcion: string;
+  urgente: boolean;
+  estado: "Pendiente" | "Arreglado";
+  cargo: string;
+  resueltoEn: string | null;
+  /** días entre que se vio y se arregló (o hasta hoy, si sigue pendiente) */
+  dias: number;
+  solucion: string | null;
+  arreglo: string | null;
+};
+
+export function libroMantenimiento(nombreBote: string, filas: FilaMantenimiento[]): ExcelJS.Workbook {
+  const libro = nuevoLibro();
+  const filasTabla = filas.map((f) => [
+    aFecha(f.fecha),
+    f.descripcion,
+    f.urgente ? "Sí" : "No",
+    f.estado,
+    f.cargo,
+    f.resueltoEn ? aFecha(f.resueltoEn) : null,
+    f.dias,
+    f.solucion,
+    f.arreglo,
+  ]);
+  const hoja = hojaTabla(
+    libro,
+    nombreBote.slice(0, 31).replace(/[\/?*[\]:]/g, " "),
+    "TablaMantenimiento",
+    [
+      { titulo: "Fecha vista", tipo: "fecha", anchoMin: 12 },
+      { titulo: "Observación", envolver: true, anchoMin: 30, anchoMax: 60 },
+      { titulo: "Urgente", tipo: "numero", anchoMin: 10 },
+      { titulo: "Estado", tipo: "numero", anchoMin: 12 },
+      { titulo: "Cargó", anchoMin: 12 },
+      { titulo: "Fecha arreglo", tipo: "fecha", anchoMin: 14 },
+      { titulo: "Días", tipo: "numero", anchoMin: 8 },
+      { titulo: "Qué se hizo", envolver: true, anchoMin: 30, anchoMax: 60 },
+      { titulo: "Lo arregló", anchoMin: 12 },
+    ],
+    filasTabla,
+    "Todavía no hay observaciones cargadas.",
+  );
+  if (filasTabla.length) {
+    const ultima = filasTabla.length + 1;
+    hoja.addConditionalFormatting({
+      ref: `D2:D${ultima}`,
+      rules: [
+        { type: "cellIs", operator: "equal", formulae: ['"Pendiente"'], priority: 1, style: reglaTexto(COLOR.alerta, COLOR.alertaTexto) },
+        { type: "cellIs", operator: "equal", formulae: ['"Arreglado"'], priority: 2, style: reglaTexto(COLOR.ok, COLOR.okTexto) },
+      ],
+    });
+    hoja.addConditionalFormatting({
+      ref: `C2:C${ultima}`,
+      rules: [{ type: "cellIs", operator: "equal", formulae: ['"Sí"'], priority: 3, style: reglaTexto(COLOR.mal, COLOR.malTexto) }],
+    });
+  }
+  return libro;
+}

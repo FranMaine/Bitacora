@@ -34,6 +34,7 @@ async function main() {
   for (const [i, nombre] of FASES.entries()) {
     await db.faseRegata.upsert({ where: { nombre }, update: {}, create: { nombre, orden: i } });
   }
+  await db.embarcacion.upsert({ where: { nombre: "Gomón" }, update: {}, create: { nombre: "Gomón", orden: 0 } });
   console.log(`Listo: ${CATEGORIAS.length} categorías, ${TEMAS.length} temas, ${CRITERIOS.length} criterios, ${FASES.length} fases de regata.`);
 }
 

@@ -1,9 +1,9 @@
 import { db } from "@/lib/db";
 import { idDeSesion } from "@/lib/session";
 import { hoyAR } from "@/lib/fechas";
-import { libroDeAsistencia, libroDeEvaluaciones } from "@/lib/exportes";
+import { libroDeAsistencia, libroDeEvaluaciones, libroDeMantenimiento } from "@/lib/exportes";
 
-// Descarga un archivo de Excel (.xlsx) con formato: ?tipo=asistencia | evaluaciones, y opcional &categoria=<id>.
+// Descarga un archivo de Excel (.xlsx) con formato: ?tipo=asistencia | evaluaciones | gomon (con &bote=<id>), y opcional &categoria=<id>.
 export async function GET(request: Request) {
   // Misma verificación que las páginas: sesión válida y instructor activo.
   const id = await idDeSesion();
@@ -12,6 +12,18 @@ export async function GET(request: Request) {
 
   const params = new URL(request.url).searchParams;
   const tipo = params.get("tipo");
+  if (tipo === "gomon") {
+    const bote = await libroDeMantenimiento(params.get("bote") ?? "");
+    if (!bote) return new Response("Embarcación inexistente", { status: 404 });
+    const slug = bote.nombre.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "").replace(/[^a-z0-9]+/g, "-");
+    return new Response((await bote.libro.xlsx.writeBuffer()) as ArrayBuffer, {
+      headers: {
+        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": `attachment; filename="bitacora-mantenimiento-${slug}-${hoyAR()}.xlsx"`,
+        "Cache-Control": "no-store",
+      },
+    });
+  }
   const categoriaId = params.get("categoria") || undefined;
   const categoria = categoriaId ? await db.categoria.findUnique({ where: { id: categoriaId }, select: { nombre: true } }) : null;
   if (categoriaId && !categoria) return new Response("Categoría inexistente", { status: 404 });

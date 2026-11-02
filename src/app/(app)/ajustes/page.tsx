@@ -46,11 +46,12 @@ function Catalogo({ tipo, titulo, ayuda, placeholder, filas }: { tipo: TipoCatal
 
 export default async function PaginaAjustes() {
   const yo = await requerirInstructor();
-  const [categorias, temas, criterios, fases, instructores] = await Promise.all([
+  const [categorias, temas, criterios, fases, embarcaciones, instructores] = await Promise.all([
     db.categoria.findMany({ orderBy: { orden: "asc" } }),
     db.tema.findMany({ orderBy: { orden: "asc" } }),
     db.criterio.findMany({ orderBy: { orden: "asc" } }),
     db.faseRegata.findMany({ orderBy: { orden: "asc" } }),
+    db.embarcacion.findMany({ orderBy: { orden: "asc" } }),
     db.instructor.findMany({ orderBy: { nombre: "asc" }, select: { id: true, nombre: true, email: true, activo: true } }),
   ]);
 
@@ -85,6 +86,13 @@ export default async function PaginaAjustes() {
         ayuda="Lo que se califica a cada chico (mala, regular o bien) en un día de regata: largada, primera ceñida, popa…"
         placeholder="Ej.: Llegada"
         filas={fases.map((f) => ({ id: f.id, nombre: f.nombre, activo: f.activa }))}
+      />
+      <Catalogo
+        tipo="embarcacion"
+        titulo="Embarcaciones"
+        ayuda="Los botes con mantenimiento (el gomón, otros que se sumen). Cada uno tiene su historial en la pestaña Gomón."
+        placeholder="Ej.: Gomón 2"
+        filas={embarcaciones.map((e) => ({ id: e.id, nombre: e.nombre, activo: e.activa }))}
       />
 
       <section className="caja space-y-3 p-4">

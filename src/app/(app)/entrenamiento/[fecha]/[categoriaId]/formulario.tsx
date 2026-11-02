@@ -4,7 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 import { ChevronDown, Check, Clock, MessageSquare, MessageSquareText, Waves, Wind } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { guardarEntrenamiento, type EstadoEntrenamiento } from "./actions";
-import { DIRECCIONES_VIENTO, formatoDuracion, minutosEntre } from "@/lib/calculos";
+import { DIRECCIONES_VIENTO, ESTABILIDADES_VIENTO, FUERZAS_VIENTO, formatoDuracion, minutosEntre, nombreDireccion } from "@/lib/calculos";
 
 type Props = {
   fecha: string;
@@ -19,7 +19,8 @@ type Props = {
     horaBajada: string;
     horaRegreso: string;
     vientoDir: string;
-    vientoNudos: string;
+    vientoFuerza: string;
+    vientoEstabilidad: string;
     corrienteDir: string;
     corrienteNudos: string;
     realizado: boolean;
@@ -65,7 +66,8 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
   const [bajada, setBajada] = useState(inicial.horaBajada);
   const [regreso, setRegreso] = useState(inicial.horaRegreso);
   const [vientoDir, setVientoDir] = useState(inicial.vientoDir);
-  const [vientoNudos, setVientoNudos] = useState(inicial.vientoNudos);
+  const [vientoFuerza, setVientoFuerza] = useState(inicial.vientoFuerza);
+  const [vientoEstabilidad, setVientoEstabilidad] = useState(inicial.vientoEstabilidad);
   const [corrienteDir, setCorrienteDir] = useState(inicial.corrienteDir);
   const [corrienteNudos, setCorrienteNudos] = useState(inicial.corrienteNudos);
   const [presentes, setPresentes] = useState(() => new Set(inicial.presentes));
@@ -84,7 +86,7 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
   // Cambios sin guardar: se compara todo lo cargado contra lo último guardado. Mientras haya
   // diferencias, el navegador avisa antes de cerrar o recargar (cargar una jornada lleva trabajo).
   const instantanea = JSON.stringify([
-    tipo, bajada, regreso, vientoDir, vientoNudos, corrienteDir, corrienteNudos, plan, resumen,
+    tipo, bajada, regreso, vientoDir, vientoFuerza, vientoEstabilidad, corrienteDir, corrienteNudos, plan, resumen,
     [...presentes].sort(), [...temasPlan].sort(), [...temasHecho].sort(), notas, califs,
   ]);
   const [base, setBase] = useState(instantanea);
@@ -160,22 +162,48 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
         <p className="etiqueta flex items-center gap-1.5">
           <Wind size={14} aria-hidden /> Viento del día
         </p>
-        <div className="grid grid-cols-[1fr_1fr] gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <label htmlFor="vientoDir" className="sr-only">Dirección del viento</label>
+            <label htmlFor="vientoDir" className="etiqueta">Dirección</label>
             <select id="vientoDir" name="vientoDir" value={vientoDir} onChange={(e) => setVientoDir(e.target.value)} className="campo">
-              <option value="">Dirección</option>
+              <option value="">Sin cargar</option>
               {DIRECCIONES_VIENTO.map((d) => (
-                <option key={d} value={d}>{d}</option>
+                <option key={d} value={d}>{nombreDireccion(d)}</option>
               ))}
             </select>
           </div>
-          <div className="relative">
-            <label htmlFor="vientoNudos" className="sr-only">Nudos de viento</label>
-            <input id="vientoNudos" name="vientoNudos" type="number" inputMode="numeric" min={0} max={80} placeholder="Nudos" value={vientoNudos} onChange={(e) => setVientoNudos(e.target.value)} className="campo pr-12" />
-            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-suave">kn</span>
+          <div>
+            <label htmlFor="vientoFuerza" className="etiqueta">Intensidad</label>
+            <select id="vientoFuerza" name="vientoFuerza" value={vientoFuerza} onChange={(e) => setVientoFuerza(e.target.value)} className="campo">
+              <option value="">Sin cargar</option>
+              {FUERZAS_VIENTO.map((f) => (
+                <option key={f.valor} value={f.valor}>{f.texto}</option>
+              ))}
+            </select>
           </div>
         </div>
+        <fieldset className="mt-3">
+          <legend className="etiqueta">Cómo se comportó</legend>
+          <div role="radiogroup" className="grid grid-cols-2 gap-1 rounded-[12px] border border-borde bg-superficie p-1">
+            {ESTABILIDADES_VIENTO.map((e) => (
+              <label key={e.valor} className="cursor-pointer">
+                <input
+                  type="radio"
+                  name="vientoEstabilidad"
+                  value={e.valor}
+                  checked={vientoEstabilidad === e.valor}
+                  // tocar de nuevo la opción elegida la borra (el viento puede quedar sin cargar)
+                  onClick={() => vientoEstabilidad === e.valor && setVientoEstabilidad("")}
+                  onChange={() => setVientoEstabilidad(e.valor)}
+                  className="peer sr-only"
+                />
+                <span className="flex min-h-10 items-center justify-center rounded-[9px] text-sm font-medium text-suave transition-[background-color,color] duration-[160ms] peer-checked:bg-acento peer-checked:text-[#fff] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-acento dark:peer-checked:text-[#06202e]">
+                  {e.texto}
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
       </div>
       {(
         <div className="border-t border-borde pt-3">
@@ -188,7 +216,7 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
               <select id="corrienteDir" name="corrienteDir" value={corrienteDir} onChange={(e) => setCorrienteDir(e.target.value)} className="campo">
                 <option value="">Dirección</option>
                 {DIRECCIONES_VIENTO.map((d) => (
-                  <option key={d} value={d}>{d}</option>
+                  <option key={d} value={d}>{nombreDireccion(d)}</option>
                 ))}
               </select>
             </div>
