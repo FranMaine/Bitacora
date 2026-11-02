@@ -232,7 +232,7 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
         <p className="mt-1 text-suave">Solo cuentan los entrenamientos dados por realizados.</p>
       </div>
 
-      <div className="-mx-4 overflow-x-auto px-4 pb-1" role="tablist" aria-label="Categoría">
+      <div className="sin-barra -mx-4 overflow-x-auto px-4 pb-1" role="tablist" aria-label="Categoría">
         <div className="flex gap-6 border-b border-borde">
           {[{ id: null as string | null, nombre: "Todas" }, ...categorias].map((c) => {
             const activa = (c.id ?? null) === (categoria?.id ?? null);

@@ -24,13 +24,13 @@ export function Navegacion({ variante }: { variante: "barra" | "superior" }) {
 
   if (variante === "superior") {
     return (
-      <nav aria-label="Principal" className="hidden items-center gap-1 md:flex">
+      <nav aria-label="Principal" className="hidden items-center gap-1 lg:flex">
         {ITEMS.map(({ href, texto }) => (
           <Link
             key={href}
             href={href}
             aria-current={activo(ruta, href) ? "page" : undefined}
-            className="rounded-[12px] px-3 py-2 text-sm font-medium text-suave hover:text-texto aria-[current=page]:bg-acento-suave aria-[current=page]:text-acento"
+            className="whitespace-nowrap rounded-[12px] px-3 py-2 text-sm font-medium text-suave hover:text-texto aria-[current=page]:bg-acento-suave aria-[current=page]:text-acento"
           >
             {texto}
           </Link>
@@ -42,7 +42,7 @@ export function Navegacion({ variante }: { variante: "barra" | "superior" }) {
   return (
     <nav
       aria-label="Principal"
-      className="fixed inset-x-0 bottom-0 z-20 border-t border-borde bg-superficie pb-[env(safe-area-inset-bottom)] md:hidden"
+      className="fixed inset-x-0 bottom-0 z-20 border-t border-borde bg-superficie pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
       <ul className="mx-auto grid max-w-xl grid-cols-6">
         {ITEMS.map(({ href, texto, Icono }) => (

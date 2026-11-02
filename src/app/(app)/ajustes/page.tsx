@@ -17,17 +17,17 @@ function Catalogo({ tipo, titulo, ayuda, placeholder, filas }: { tipo: TipoCatal
       </div>
       <ul className="divide-y divide-borde">
         {filas.map((f) => (
-          <li key={f.id} className="flex items-center gap-2 py-2">
-            <form action={renombrarItem.bind(null, tipo, f.id)} className="flex min-w-0 flex-1 gap-2">
+          <li key={f.id} className="grid grid-cols-2 gap-2 py-2.5 sm:flex sm:items-center">
+            <form action={renombrarItem.bind(null, tipo, f.id)} className="contents sm:flex sm:min-w-0 sm:flex-1 sm:gap-2">
               <input
                 name="nombre"
                 defaultValue={f.nombre}
                 aria-label={`Nombre de ${f.nombre}`}
-                className={`campo !min-h-10 ${f.activo ? "" : "text-suave line-through"}`}
+                className={`campo !min-h-10 col-span-2 sm:min-w-0 sm:flex-1 ${f.activo ? "" : "text-suave line-through"}`}
               />
-              <button type="submit" className="boton !min-h-10 shrink-0 text-sm">Guardar</button>
+              <button type="submit" className="boton !min-h-10 text-sm sm:shrink-0">Guardar</button>
             </form>
-            <form action={cambiarActivoItem.bind(null, tipo, f.id, !f.activo)}>
+            <form action={cambiarActivoItem.bind(null, tipo, f.id, !f.activo)} className="contents sm:block">
               {f.activo ? (
                 <BotonConfirmar mensaje={`¿Archivar "${f.nombre}"? Deja de ofrecerse, pero se conserva lo ya cargado.`} className="boton boton-peligro !min-h-10 text-sm">
                   Archivar

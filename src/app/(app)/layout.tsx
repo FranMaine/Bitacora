@@ -21,17 +21,17 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
         Saltar al contenido
       </a>
       <header className="sticky top-0 z-30 pt-[env(safe-area-inset-top)] border-b border-borde bg-superficie/90 backdrop-blur-md supports-[backdrop-filter]:bg-superficie/75">
-        <div className="mx-auto flex h-14 max-w-3xl items-center justify-between gap-3 px-4">
-          <Link href="/" className="flex items-center gap-2 text-base font-semibold tracking-tight sm:text-lg">
+        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-3 px-4">
+          <Link href="/" className="flex shrink-0 items-center gap-2 text-base font-semibold tracking-tight sm:text-lg">
             <Image src="/cvsi.webp" alt="CVSI" width={400} height={207} className="h-7 w-auto" priority />
             Bitácora
           </Link>
           <Navegacion variante="superior" />
-          <form action={cerrarSesion} className="flex items-center gap-2">
+          <form action={cerrarSesion} className="flex shrink-0 items-center gap-2">
             <BotonTema />
-            <span className="hidden text-sm text-suave sm:inline">{instructor.nombre}</span>
+            <span className="hidden whitespace-nowrap text-sm text-suave xl:inline">{instructor.nombre}</span>
             <span
-              className="flex size-8 items-center justify-center rounded-full bg-acento-suave text-xs font-semibold text-acento sm:hidden"
+              className="flex size-8 items-center justify-center rounded-full bg-acento-suave text-xs font-semibold text-acento xl:hidden"
               aria-label={instructor.nombre}
               title={instructor.nombre}
             >

@@ -11,7 +11,7 @@ export function SelectorFecha({ fecha }: { fecha: string }) {
       aria-label="Elegir día"
       value={fecha}
       onChange={(e) => e.target.value && router.push(`/jornada?fecha=${e.target.value}`)}
-      className="campo !w-auto"
+      className="campo !w-0 min-w-0 flex-1 sm:!w-auto sm:flex-none"
     />
   );
 }

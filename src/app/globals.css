@@ -132,7 +132,7 @@ body {
   padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   body {
     padding-bottom: 0;
   }
@@ -343,4 +343,12 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Listas que se desplazan de costado (pestañas): sin la barra, se nota igual porque la última queda cortada. */
+.sin-barra {
+  scrollbar-width: none;
+}
+.sin-barra::-webkit-scrollbar {
+  display: none;
 }

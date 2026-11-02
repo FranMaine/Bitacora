@@ -52,7 +52,7 @@ export default async function PaginaEvaluar({ searchParams }: { searchParams: Pr
         </p>
       </div>
 
-      <div className="-mx-4 overflow-x-auto px-4 pb-1" role="tablist" aria-label="Categoría">
+      <div className="sin-barra -mx-4 overflow-x-auto px-4 pb-1" role="tablist" aria-label="Categoría">
         <div className="relative flex gap-6 border-b border-borde">
           {categorias.map((c) => (
             <Link

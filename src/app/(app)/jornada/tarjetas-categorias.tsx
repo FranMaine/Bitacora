@@ -78,7 +78,11 @@ function Tarjeta({ fecha, categoria: c }: { fecha: string; categoria: TarjetaCat
             <LogoClase nombre={c.nombre} tam={30} />
           </span>
           <div className="min-w-0">
-            <p className="font-semibold">{c.nombre}</p>
+            <p className="font-semibold [overflow-wrap:anywhere]">{c.nombre}</p>
+            <span className="mt-1 flex flex-wrap items-center gap-1.5 sm:hidden">
+              {c.tipo === "REGATA" && <span className="chip">Regata</span>}
+              <span className={`chip ${chip.clase}`}>{chip.texto}</span>
+            </span>
             <p className="mt-0.5 text-sm text-suave">
               {c.total} {c.total === 1 ? "alumno" : "alumnos"}
               {c.estado === "realizado" && ` · ${c.presentes} presentes`}
@@ -89,11 +93,12 @@ function Tarjeta({ fecha, categoria: c }: { fecha: string; categoria: TarjetaCat
             {c.temas.length > 0 && <p className="mt-1 truncate text-sm text-suave">{c.temas.join(", ")}</p>}
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="hidden shrink-0 items-center gap-2 sm:flex">
           {c.tipo === "REGATA" && <span className="chip">Regata</span>}
           <span className={`chip ${chip.clase}`}>{chip.texto}</span>
           <ChevronRight size={18} className="text-suave" aria-hidden />
         </div>
+        <ChevronRight size={18} className="shrink-0 text-suave sm:hidden" aria-hidden />
       </Link>
     </li>
   );

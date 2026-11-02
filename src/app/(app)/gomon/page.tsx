@@ -60,7 +60,7 @@ export default async function PaginaGomon({ searchParams }: { searchParams: Prom
       </div>
 
       {embarcaciones.length > 1 && (
-        <div className="-mx-4 overflow-x-auto px-4 pb-1" role="tablist" aria-label="Embarcación">
+        <div className="sin-barra -mx-4 overflow-x-auto px-4 pb-1" role="tablist" aria-label="Embarcación">
           <div className="flex gap-6 border-b border-borde">
             {embarcaciones.map((e) => (
               <Link

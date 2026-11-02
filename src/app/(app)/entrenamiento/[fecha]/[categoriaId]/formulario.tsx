@@ -210,7 +210,7 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
           <p className="etiqueta flex items-center gap-1.5">
             <Waves size={14} aria-hidden /> Corriente
           </p>
-          <div className="grid grid-cols-[1fr_1fr] gap-3">
+          <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
             <div>
               <label htmlFor="corrienteDir" className="sr-only">Dirección de la corriente</label>
               <select id="corrienteDir" name="corrienteDir" value={corrienteDir} onChange={(e) => setCorrienteDir(e.target.value)} className="campo">
@@ -435,7 +435,7 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
         </p>
       )}
 
-      <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] -mx-4 flex gap-3 border-t border-borde bg-fondo/95 px-4 py-3 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:px-0 md:py-0">
+      <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] lg:bottom-0 -mx-4 flex gap-3 border-t border-borde bg-fondo/95 px-4 py-3 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:px-0 md:py-0">
         <button type="submit" name="accion" value="plan" disabled={pendiente} className="boton flex-1">
           Guardar plan
         </button>
