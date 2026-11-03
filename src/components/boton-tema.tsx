@@ -12,10 +12,17 @@ function aplicar(t: Tema) {
   document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", COLOR_BARRA[t]));
 }
 
+const sistema = (): Tema => (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+
+// La elección manual se guarda junto con el tema del sistema de ese momento ("tema2"): vale mientras el
+// sistema siga igual. Si el sistema cambia (de día a noche, o se cambió el celular), se vuelve a seguirlo.
+// Las elecciones viejas ("tema", sin el dato del sistema) se ignoran: podían haber quedado trabadas.
 function elegidoPorElUsuario(): Tema | null {
   try {
-    const t = localStorage.getItem("tema");
-    return t === "light" || t === "dark" ? t : null;
+    const r = JSON.parse(localStorage.getItem("tema2") ?? "null");
+    if (r && (r.t === "light" || r.t === "dark") && r.s === sistema()) return r.t;
+    if (r) localStorage.removeItem("tema2"); // el sistema cambió: la elección vieja ya no vale
+    return null;
   } catch {
     return null;
   }
@@ -37,9 +44,7 @@ export function BotonTema({ className = "" }: { className?: string }) {
   // Mientras la persona no eligió, si el sistema cambia de tema (por ejemplo, de día a noche), la app lo acompaña.
   useEffect(() => {
     const consulta = matchMedia("(prefers-color-scheme: dark)");
-    const alCambiar = () => {
-      if (!elegidoPorElUsuario()) aplicar(consulta.matches ? "dark" : "light");
-    };
+    const alCambiar = () => aplicar(elegidoPorElUsuario() ?? sistema());
     consulta.addEventListener("change", alCambiar);
     return () => consulta.removeEventListener("change", alCambiar);
   }, []);
@@ -51,7 +56,8 @@ export function BotonTema({ className = "" }: { className?: string }) {
       onClick={() => {
         const nuevo: Tema = oscuro ? "light" : "dark";
         try {
-          localStorage.setItem("tema", nuevo);
+          localStorage.setItem("tema2", JSON.stringify({ t: nuevo, s: sistema() }));
+          localStorage.removeItem("tema");
         } catch {
           /* sin almacenamiento: el cambio vale solo hasta recargar */
         }
