@@ -40,6 +40,9 @@ export default async function DetalleEvaluacion({ params }: { params: Promise<{ 
     include: { items: true },
   });
 
+  const criteriosActivos = await db.criterio.findMany({ where: { activo: true }, orderBy: { orden: "asc" }, select: { id: true, nombre: true } });
+  const conNota = new Set(evaluacion.items.map((i) => i.criterioId));
+  const noAplican = criteriosActivos.filter((c) => !conNota.has(c.id));
   const items = [...evaluacion.items].sort((a, b) => a.criterio.orden - b.criterio.orden);
   const valorAnterior = new Map(anterior?.items.map((i) => [i.criterioId, i.valor]));
   const prom = promedio(items.map((i) => i.valor));
@@ -95,6 +98,16 @@ export default async function DetalleEvaluacion({ params }: { params: Promise<{ 
             );
           })}
         </ul>
+        {noAplican.length > 0 && (
+          <details className="mt-2 border-t border-borde pt-3 text-sm text-suave">
+            <summary className="cursor-pointer font-medium">No aplican ({noAplican.length})</summary>
+            <ul className="mt-2 space-y-1">
+              {noAplican.map((c) => (
+                <li key={c.id}>{c.nombre}</li>
+              ))}
+            </ul>
+          </details>
+        )}
       </section>
 
       {evaluacion.comentario && (

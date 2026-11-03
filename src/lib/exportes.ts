@@ -66,26 +66,25 @@ export async function libroDeEvaluaciones(categoriaId?: string) {
   );
 }
 
-export async function libroDeMantenimiento(embarcacionId: string) {
-  const [embarcacion, items] = await Promise.all([
-    db.embarcacion.findUnique({ where: { id: embarcacionId }, select: { nombre: true } }),
-    db.mantenimiento.findMany({
-      where: { embarcacionId },
-      orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
-      include: { creadoPor: { select: { nombre: true } }, resueltoPor: { select: { nombre: true } } },
-    }),
-  ]);
-  if (!embarcacion) return null;
+/** Mantenimiento de un bote (con su id) o de todos (sin id), con el costo de cada arreglo. */
+export async function libroDeMantenimiento(embarcacionId?: string) {
+  const embarcacion = embarcacionId ? await db.embarcacion.findUnique({ where: { id: embarcacionId }, select: { nombre: true } }) : null;
+  if (embarcacionId && !embarcacion) return null;
+  const items = await db.mantenimiento.findMany({
+    where: embarcacionId ? { embarcacionId } : {},
+    orderBy: [{ embarcacion: { orden: "asc" } }, { fecha: "desc" }, { createdAt: "desc" }],
+    include: { embarcacion: { select: { nombre: true } }, creadoPor: { select: { nombre: true } }, resueltoPor: { select: { nombre: true } } },
+  });
   const hoy = hoyAR();
   return {
-    nombre: embarcacion.nombre,
+    nombre: embarcacion?.nombre ?? "todos",
     libro: libroMantenimiento(
-      embarcacion.nombre,
       items.map((i) => {
         const fecha = deFechaDB(i.fecha);
         const resueltoEn = i.resueltoEn ? deFechaDB(i.resueltoEn) : null;
         const arreglado = i.estado === "ARREGLADO" && resueltoEn !== null;
         return {
+          bote: i.embarcacion.nombre,
           fecha,
           descripcion: i.descripcion,
           urgente: i.urgente,
@@ -95,6 +94,7 @@ export async function libroDeMantenimiento(embarcacionId: string) {
           dias: arreglado ? diasQueTardo(fecha, resueltoEn) : diasPendiente(fecha, hoy),
           solucion: i.solucion,
           arreglo: arreglado ? (i.resueltoPor?.nombre ?? null) : null,
+          costo: i.costo,
         };
       }),
     ),

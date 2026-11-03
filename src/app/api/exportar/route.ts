@@ -13,13 +13,13 @@ export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const tipo = params.get("tipo");
   if (tipo === "gomon") {
-    const bote = await libroDeMantenimiento(params.get("bote") ?? "");
+    const bote = await libroDeMantenimiento(params.get("bote") || undefined);
     if (!bote) return new Response("Embarcación inexistente", { status: 404 });
     const slug = bote.nombre.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "").replace(/[^a-z0-9]+/g, "-");
     return new Response((await bote.libro.xlsx.writeBuffer()) as ArrayBuffer, {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": `attachment; filename="bitacora-mantenimiento-${slug}-${hoyAR()}.xlsx"`,
+        "Content-Disposition": `attachment; filename="bitacora-botes-${slug}-${hoyAR()}.xlsx"`,
         "Cache-Control": "no-store",
       },
     });

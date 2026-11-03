@@ -47,3 +47,9 @@ export function resumenMantenimiento(items: ItemMantenimiento[], hoy: string): R
     pendienteMasViejo: pendientes.length ? Math.max(...pendientes.map((i) => diasPendiente(i.fecha, hoy))) : null,
   };
 }
+
+/** "$ 12.500": pesos argentinos, sin decimales. */
+export const formatoPesos = (n: number) => `$ ${new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 }).format(n)}`;
+
+/** Total gastado en arreglos (los que no tienen costo cargado no suman). */
+export const gastoTotal = (items: { costo: number | null }[]) => items.reduce((suma, i) => suma + (i.costo ?? 0), 0);

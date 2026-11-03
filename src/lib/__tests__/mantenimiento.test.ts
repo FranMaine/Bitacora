@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { diasPendiente, diasQueTardo, haceDias, resumenMantenimiento, tardoTexto } from "../mantenimiento";
+import { formatoPesos, gastoTotal, diasPendiente, diasQueTardo, haceDias, resumenMantenimiento, tardoTexto } from "../mantenimiento";
 
 describe("textos de días", () => {
   it("haceDias y tardoTexto", () => {
@@ -32,5 +32,14 @@ describe("resumenMantenimiento", () => {
   });
   it("sin datos no hay promedios", () => {
     expect(resumenMantenimiento([], hoy)).toEqual({ pendientes: 0, urgentes: 0, arreglados: 0, diasMedios: null, pendienteMasViejo: null });
+  });
+});
+
+describe("costos", () => {
+  it("formatea pesos y suma solo los costos cargados", () => {
+    expect(formatoPesos(12500)).toBe("$ 12.500");
+    expect(formatoPesos(0)).toBe("$ 0");
+    expect(gastoTotal([{ costo: 1000 }, { costo: null }, { costo: 2500 }])).toBe(3500);
+    expect(gastoTotal([])).toBe(0);
   });
 });

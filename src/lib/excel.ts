@@ -88,12 +88,15 @@ function hojaTabla(libro: ExcelJS.Workbook, nombreHoja: string, nombreTabla: str
     rows: filas as ExcelJS.CellValue[][],
   });
 
-  hoja.getRow(1).height = 30;
+  // el encabezado crece según los renglones que necesite el título más largo (los criterios tienen nombres largos)
+  let renglones = 2;
   columnas.forEach((c, i) => {
     const col = hoja.getColumn(i + 1);
     col.width = ancho([c.titulo, ...filas.map((f) => f[i])], c.anchoMin ?? 10, c.anchoMax ?? 40);
+    renglones = Math.max(renglones, Math.ceil((c.titulo.length * 1.15) / Math.max(1, col.width! - 2)));
     estiloEncabezado(hoja.getCell(1, i + 1));
   });
+  hoja.getRow(1).height = Math.min(150, Math.max(30, renglones * 15 + 6));
 
   filas.forEach((_, r) => {
     const fila = hoja.getRow(r + 2);
@@ -461,6 +464,7 @@ function columnaLetra(n: number): string {
 // =====================================================================================
 
 export type FilaMantenimiento = {
+  bote: string;
   fecha: string; // día en que se vio el problema
   descripcion: string;
   urgente: boolean;
@@ -471,11 +475,16 @@ export type FilaMantenimiento = {
   dias: number;
   solucion: string | null;
   arreglo: string | null;
+  /** pesos que costó el arreglo */
+  costo: number | null;
 };
 
-export function libroMantenimiento(nombreBote: string, filas: FilaMantenimiento[]): ExcelJS.Workbook {
+const FORMATO_PESOS = '"$" #,##0';
+
+export function libroMantenimiento(filas: FilaMantenimiento[], titulo = "Mantenimiento"): ExcelJS.Workbook {
   const libro = nuevoLibro();
   const filasTabla = filas.map((f) => [
+    f.bote,
     aFecha(f.fecha),
     f.descripcion,
     f.urgente ? "Sí" : "No",
@@ -485,12 +494,14 @@ export function libroMantenimiento(nombreBote: string, filas: FilaMantenimiento[
     f.dias,
     f.solucion,
     f.arreglo,
+    f.costo,
   ]);
   const hoja = hojaTabla(
     libro,
-    nombreBote.slice(0, 31).replace(/[\/?*[\]:]/g, " "),
+    titulo,
     "TablaMantenimiento",
     [
+      { titulo: "Bote", anchoMin: 10 },
       { titulo: "Fecha vista", tipo: "fecha", anchoMin: 12 },
       { titulo: "Observación", envolver: true, anchoMin: 30, anchoMax: 60 },
       { titulo: "Urgente", tipo: "numero", anchoMin: 10 },
@@ -500,6 +511,7 @@ export function libroMantenimiento(nombreBote: string, filas: FilaMantenimiento[
       { titulo: "Días", tipo: "numero", anchoMin: 8 },
       { titulo: "Qué se hizo", envolver: true, anchoMin: 30, anchoMax: 60 },
       { titulo: "Lo arregló", anchoMin: 12 },
+      { titulo: "Costo", tipo: "numero", formato: FORMATO_PESOS, anchoMin: 14 },
     ],
     filasTabla,
     "Todavía no hay observaciones cargadas.",
@@ -507,16 +519,44 @@ export function libroMantenimiento(nombreBote: string, filas: FilaMantenimiento[
   if (filasTabla.length) {
     const ultima = filasTabla.length + 1;
     hoja.addConditionalFormatting({
-      ref: `D2:D${ultima}`,
+      ref: `E2:E${ultima}`,
       rules: [
         { type: "cellIs", operator: "equal", formulae: ['"Pendiente"'], priority: 1, style: reglaTexto(COLOR.alerta, COLOR.alertaTexto) },
         { type: "cellIs", operator: "equal", formulae: ['"Arreglado"'], priority: 2, style: reglaTexto(COLOR.ok, COLOR.okTexto) },
       ],
     });
     hoja.addConditionalFormatting({
-      ref: `C2:C${ultima}`,
+      ref: `D2:D${ultima}`,
       rules: [{ type: "cellIs", operator: "equal", formulae: ['"Sí"'], priority: 3, style: reglaTexto(COLOR.mal, COLOR.malTexto) }],
     });
   }
+
+  // ---- gasto por bote: cuánto cuesta mantener cada uno
+  const porBote = new Map<string, { observaciones: number; pendientes: number; arreglos: number; gasto: number }>();
+  for (const f of filas) {
+    const a = porBote.get(f.bote) ?? { observaciones: 0, pendientes: 0, arreglos: 0, gasto: 0 };
+    a.observaciones += 1;
+    if (f.estado === "Pendiente") a.pendientes += 1;
+    else a.arreglos += 1;
+    a.gasto += f.costo ?? 0;
+    porBote.set(f.bote, a);
+  }
+  const resumen = [...porBote.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0], "es", { numeric: true }))
+    .map(([bote, a]) => [bote, a.observaciones, a.pendientes, a.arreglos, a.gasto]);
+  hojaTabla(
+    libro,
+    "Gasto por bote",
+    "TablaGastoBotes",
+    [
+      { titulo: "Bote", anchoMin: 12 },
+      { titulo: "Observaciones", tipo: "numero", anchoMin: 15 },
+      { titulo: "Pendientes", tipo: "numero", anchoMin: 12 },
+      { titulo: "Arreglados", tipo: "numero", anchoMin: 12 },
+      { titulo: "Gastado", tipo: "numero", formato: FORMATO_PESOS, anchoMin: 16 },
+    ],
+    resumen,
+    "Todavía no hay observaciones cargadas.",
+  );
   return libro;
 }

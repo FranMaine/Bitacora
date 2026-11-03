@@ -49,6 +49,13 @@ export function FormularioEvaluacion({
               </label>
             ))}
           </div>
+          {/* Sin nota = no aplica: ese criterio no entra en el promedio ni en las estadísticas. */}
+          <label className="mt-2 block cursor-pointer">
+            <input type="radio" name={`nota_${c.id}`} value="" defaultChecked={c.valor === null} className="peer sr-only" />
+            <span className="flex h-10 items-center justify-center rounded-[12px] border border-borde bg-superficie text-sm font-medium text-suave transition-[background-color,border-color,transform] duration-[120ms] active:scale-95 peer-checked:border-texto peer-checked:bg-fondo peer-checked:text-texto peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-acento">
+              N/A · no aplica
+            </span>
+          </label>
         </fieldset>
       ))}
 

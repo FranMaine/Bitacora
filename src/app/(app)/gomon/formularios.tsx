@@ -1,8 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { Check, Wrench } from "lucide-react";
-import { crearObservacion, marcarArreglado, type EstadoGomon } from "./actions";
+import { Check, Pencil, Wrench } from "lucide-react";
+import { crearObservacion, guardarCosto, marcarArreglado, type EstadoGomon } from "./actions";
 import { MensajeForm } from "@/components/mensaje-form";
 
 /** Carga de una observación nueva (queda pendiente). */
@@ -75,6 +75,10 @@ export function MarcarArreglado({ id, fechaObservada, hoy }: { id: string; fecha
         <label htmlFor={`resuelto-${id}`} className="etiqueta">Fecha del arreglo</label>
         <input id={`resuelto-${id}`} name="resueltoEn" type="date" defaultValue={hoy} min={fechaObservada} max={hoy} required className="campo" />
       </div>
+      <div>
+        <label htmlFor={`costo-${id}`} className="etiqueta">Costo del arreglo en pesos (opcional)</label>
+        <input id={`costo-${id}`} name="costo" inputMode="numeric" autoComplete="off" placeholder="Ej.: 25000" className="campo text-sm" />
+      </div>
       <MensajeForm error={estado.error} ok={estado.ok} />
       <div className="flex gap-2">
         <button type="submit" disabled={pendiente} className="boton boton-primario !min-h-10 flex-1 text-sm">
@@ -82,6 +86,29 @@ export function MarcarArreglado({ id, fechaObservada, hoy }: { id: string; fecha
         </button>
         <button type="button" onClick={() => setAbierto(false)} className="boton !min-h-10 text-sm">Cancelar</button>
       </div>
+    </form>
+  );
+}
+
+/** Cargar o corregir el costo de un arreglo ya hecho. */
+export function EditarCosto({ id, costo }: { id: string; costo: number | null }) {
+  const [abierto, setAbierto] = useState(false);
+  const [estado, accion, pendiente] = useActionState<EstadoGomon, FormData>(guardarCosto.bind(null, id), {});
+
+  if (!abierto) {
+    return (
+      <button type="button" onClick={() => setAbierto(true)} className="inline-flex items-center gap-1 text-xs font-medium text-suave underline-offset-4 hover:text-texto hover:underline">
+        <Pencil size={13} aria-hidden /> {costo === null ? "Cargar costo" : "Cambiar costo"}
+      </button>
+    );
+  }
+  return (
+    <form action={accion} className="aparecer flex w-full flex-wrap items-center gap-2">
+      <label htmlFor={`editar-costo-${id}`} className="sr-only">Costo en pesos</label>
+      <input id={`editar-costo-${id}`} name="costo" inputMode="numeric" autoComplete="off" defaultValue={costo ?? ""} placeholder="Pesos" className="campo !min-h-10 min-w-0 flex-1 text-sm" />
+      <button type="submit" disabled={pendiente} className="boton boton-primario !min-h-10 text-sm">{pendiente ? "…" : "Guardar"}</button>
+      <button type="button" onClick={() => setAbierto(false)} className="boton !min-h-10 text-sm">Cerrar</button>
+      <MensajeForm error={estado.error} ok={estado.ok} />
     </form>
   );
 }

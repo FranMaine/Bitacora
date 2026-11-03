@@ -171,7 +171,7 @@ export default async function PaginaHoy({ searchParams }: { searchParams: Promis
           <div className="flex items-center gap-3">
             <Wrench size={18} className={urgentesGomon ? "text-peligro" : "text-alerta"} aria-hidden />
             <div>
-              <p className="font-semibold">Mantenimiento pendiente</p>
+              <p className="font-semibold">Botes: mantenimiento pendiente</p>
               <p className="text-sm text-suave">
                 {pendientesGomon} {pendientesGomon === 1 ? "observación" : "observaciones"} sin arreglar
                 {urgentesGomon > 0 && ` (${urgentesGomon} ${urgentesGomon === 1 ? "urgente" : "urgentes"})`}.

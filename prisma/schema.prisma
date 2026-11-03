@@ -225,6 +225,7 @@ model Mantenimiento {
   resueltoPorId String?
   resueltoPor   Instructor? @relation("MantenimientoResueltoPor", fields: [resueltoPorId], references: [id])
   solucion      String?
+  costo         Int? // pesos que costó el arreglo (opcional)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 

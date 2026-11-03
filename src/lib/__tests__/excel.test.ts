@@ -105,20 +105,25 @@ describe("libroEvaluaciones", () => {
 });
 
 describe("libroMantenimiento", () => {
-  it("arma la tabla con pendientes y arreglados, y sobrevive a recargarse", async () => {
+  it("arma la tabla con costos y la hoja de gasto por bote, y sobrevive a recargarse", async () => {
     const libro = await recargar(
-      libroMantenimiento("Gomón", [
-        { fecha: "2026-11-02", descripcion: "Pierde aire el flotador", urgente: true, estado: "Pendiente", cargo: "Fran", resueltoEn: null, dias: 3, solucion: null, arreglo: null },
-        { fecha: "2026-10-01", descripcion: "Motor se ahoga", urgente: false, estado: "Arreglado", cargo: "Fran", resueltoEn: "2026-10-05", dias: 4, solucion: "Limpieza de carburador", arreglo: "Ana" },
+      libroMantenimiento([
+        { bote: "Bote 2", fecha: "2026-11-02", descripcion: "Pierde aire el flotador", urgente: true, estado: "Pendiente", cargo: "Fran", resueltoEn: null, dias: 3, solucion: null, arreglo: null, costo: null },
+        { bote: "Bote 7", fecha: "2026-10-01", descripcion: "Motor se ahoga", urgente: false, estado: "Arreglado", cargo: "Fran", resueltoEn: "2026-10-05", dias: 4, solucion: "Limpieza de carburador", arreglo: "Ana", costo: 25000 },
+        { bote: "Bote 7", fecha: "2026-10-10", descripcion: "Boza deshilachada", urgente: false, estado: "Arreglado", cargo: "Ana", resueltoEn: "2026-10-11", dias: 1, solucion: null, arreglo: "Ana", costo: 5000 },
       ]),
     );
-    const hoja = libro.getWorksheet("Gomón")!;
-    expect(hoja.rowCount).toBe(3);
-    expect(hoja.getCell("D2").value).toBe("Pendiente");
-    expect(hoja.getCell("H3").value).toBe("Limpieza de carburador");
+    const hoja = libro.getWorksheet("Mantenimiento")!;
+    expect(hoja.rowCount).toBe(4);
+    expect(hoja.getCell("A2").value).toBe("Bote 2");
+    expect(hoja.getCell("E2").value).toBe("Pendiente");
+    expect(hoja.getCell("K3").value).toBe(25000);
+    const gastos = libro.getWorksheet("Gasto por bote")!;
+    expect(gastos.getCell("A3").value).toBe("Bote 7");
+    expect(gastos.getCell("E3").value).toBe(30000);
   });
   it("sin datos deja el aviso en vez de una tabla vacía", async () => {
-    const hoja = (await recargar(libroMantenimiento("Gomón", []))).getWorksheet("Gomón")!;
+    const hoja = (await recargar(libroMantenimiento([]))).getWorksheet("Mantenimiento")!;
     expect(hoja.getCell("A2").value).toBe("Todavía no hay observaciones cargadas.");
   });
 });

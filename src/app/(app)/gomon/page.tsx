@@ -4,12 +4,12 @@ import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
 import { deFechaDB, fechaCorta, hoyAR, nombrePeriodo, periodoDe } from "@/lib/fechas";
 import { formatoNota } from "@/lib/calculos";
-import { diasPendiente, diasQueTardo, haceDias, resumenMantenimiento, tardoTexto } from "@/lib/mantenimiento";
+import { diasPendiente, diasQueTardo, formatoPesos, gastoTotal, haceDias, resumenMantenimiento, tardoTexto } from "@/lib/mantenimiento";
 import { BotonConfirmar } from "@/components/boton-confirmar";
 import { eliminarObservacion, reabrir } from "./actions";
-import { FormularioObservacion, MarcarArreglado } from "./formularios";
+import { EditarCosto, FormularioObservacion, MarcarArreglado } from "./formularios";
 
-export const metadata = { title: "Gomón" };
+export const metadata = { title: "Botes" };
 
 export default async function PaginaGomon({ searchParams }: { searchParams: Promise<{ bote?: string }> }) {
   await requerirInstructor();
@@ -22,7 +22,7 @@ export default async function PaginaGomon({ searchParams }: { searchParams: Prom
   if (!embarcacion) {
     return (
       <div className="space-y-4">
-        <h1 className="display text-3xl sm:text-4xl">Gomón</h1>
+        <h1 className="display text-3xl sm:text-4xl">Botes</h1>
         <p className="caja p-4 text-suave">
           No hay embarcaciones cargadas. Agregá una en <Link href="/ajustes" className="text-acento underline">Ajustes</Link>.
         </p>
@@ -30,12 +30,26 @@ export default async function PaginaGomon({ searchParams }: { searchParams: Prom
     );
   }
 
+  // Gasto de cada bote (todos, no solo el que se está mirando) para compararlos.
+  const gastos = await db.mantenimiento.groupBy({
+    by: ["embarcacionId"],
+    where: { estado: "ARREGLADO" },
+    _sum: { costo: true },
+    _count: { _all: true },
+  });
+  const pendientesPorBote = new Map(
+    (await db.mantenimiento.groupBy({ by: ["embarcacionId"], where: { estado: "PENDIENTE" }, _count: { _all: true } })).map((g) => [g.embarcacionId, g._count._all]),
+  );
+  const gastoDe = new Map(gastos.map((g) => [g.embarcacionId, { total: g._sum.costo ?? 0, arreglos: g._count._all }]));
+  const gastoTodos = [...gastoDe.values()].reduce((s, g) => s + g.total, 0);
+
   const items = await db.mantenimiento.findMany({
     where: { embarcacionId: embarcacion.id },
     orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
     include: { creadoPor: { select: { nombre: true } }, resueltoPor: { select: { nombre: true } } },
   });
   const datos = items.map((i) => ({ ...i, fechaTxt: deFechaDB(i.fecha), resueltoTxt: i.resueltoEn ? deFechaDB(i.resueltoEn) : null }));
+  const gastoBote = gastoTotal(datos);
   const resumen = resumenMantenimiento(datos.map((i) => ({ estado: i.estado, urgente: i.urgente, fecha: i.fechaTxt, resueltoEn: i.resueltoTxt })), hoy);
 
   // Pendientes: primero lo urgente y, dentro de cada grupo, lo que más hace que espera.
@@ -56,7 +70,7 @@ export default async function PaginaGomon({ searchParams }: { searchParams: Prom
     <div className="space-y-6">
       <div>
         <h1 className="display text-3xl sm:text-4xl">{embarcacion.nombre}</h1>
-        <p className="mt-1 text-suave">Observaciones de mantenimiento: cada una queda pendiente hasta que se arregla, y todas forman el historial del bote.</p>
+        <p className="mt-1 text-suave">Cada observación queda pendiente hasta que se arregla; con la fecha y el costo del arreglo se arma el historial y el gasto de cada bote.</p>
       </div>
 
       {embarcaciones.length > 1 && (
@@ -71,6 +85,11 @@ export default async function PaginaGomon({ searchParams }: { searchParams: Prom
                 className="group shrink-0 whitespace-nowrap px-1 py-2.5 text-sm font-medium text-suave transition-colors duration-[160ms] aria-selected:text-acento hover:text-texto aria-selected:hover:text-acento"
               >
                 {e.nombre}
+                {(pendientesPorBote.get(e.id) ?? 0) > 0 && (
+                  <span className="ml-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-alerta-suave px-1.5 text-[0.6875rem] font-semibold text-alerta" title="Observaciones pendientes">
+                    {pendientesPorBote.get(e.id)}
+                  </span>
+                )}
                 <span aria-hidden className="pointer-events-none mt-2 block h-[2px] origin-left scale-x-0 bg-acento transition-transform duration-[220ms] ease-[cubic-bezier(0.23,1,0.32,1)] group-aria-selected:scale-x-100" />
               </Link>
             ))}
@@ -78,7 +97,7 @@ export default async function PaginaGomon({ searchParams }: { searchParams: Prom
         </div>
       )}
 
-      <section className="grid grid-cols-3 gap-3">
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className={`caja p-3 ${resumen.pendientes ? "border-alerta" : ""}`}>
           <p className="text-xs text-suave">Pendientes</p>
           <p className={`text-xl font-semibold ${resumen.urgentes ? "text-peligro" : ""}`}>{resumen.pendientes}</p>
@@ -87,6 +106,11 @@ export default async function PaginaGomon({ searchParams }: { searchParams: Prom
         <div className="caja p-3">
           <p className="text-xs text-suave">Arreglados</p>
           <p className="text-xl font-semibold">{resumen.arreglados}</p>
+        </div>
+        <div className="caja p-3">
+          <p className="text-xs text-suave">Gastado en arreglos</p>
+          <p className="text-xl font-semibold">{formatoPesos(gastoBote)}</p>
+          <p className="text-xs text-suave">{gastoBote === 0 && resumen.arreglados > 0 ? "sin costos cargados" : "en este bote"}</p>
         </div>
         <div className="caja p-3">
           <p className="text-xs text-suave">Tardan en arreglarse</p>
@@ -160,6 +184,7 @@ export default async function PaginaGomon({ searchParams }: { searchParams: Prom
                       {i.urgente && <span className="chip chip-alerta">Fue urgente</span>}
                     </div>
                     <p className="whitespace-pre-wrap">{i.descripcion}</p>
+                    {i.costo !== null && <p className="text-sm font-semibold">Costo: {formatoPesos(i.costo)}</p>}
                     {i.solucion && (
                       <p className="whitespace-pre-wrap rounded-[10px] bg-ok-suave px-3 py-2 text-sm text-ok">Se hizo: {i.solucion}</p>
                     )}
@@ -168,6 +193,7 @@ export default async function PaginaGomon({ searchParams }: { searchParams: Prom
                         Lo cargó {i.creadoPor.nombre}
                         {i.resueltoPor && ` · lo arregló ${i.resueltoPor.nombre}`}
                       </p>
+                      <EditarCosto id={i.id} costo={i.costo} />
                       <form action={reabrir.bind(null, i.id)}>
                         <BotonConfirmar mensaje="¿Volver a dejar esto como pendiente?" className="inline-flex items-center gap-1 text-xs font-medium text-suave underline-offset-4 hover:text-texto hover:underline">
                           <RotateCcw size={13} aria-hidden /> Volver a pendiente
@@ -180,6 +206,33 @@ export default async function PaginaGomon({ searchParams }: { searchParams: Prom
             </div>
           ))
         )}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="font-semibold">Gasto por bote</h2>
+        <ul className="caja divide-y divide-borde">
+          {embarcaciones.map((e) => {
+            const g = gastoDe.get(e.id);
+            return (
+              <li key={e.id}>
+                <Link href={`/gomon?bote=${e.id}`} className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-acento-suave/40">
+                  <span className="font-medium">{e.nombre}</span>
+                  <span className="text-right">
+                    <span className="font-semibold">{formatoPesos(g?.total ?? 0)}</span>
+                    <span className="block text-xs text-suave">{g?.arreglos ?? 0} {(g?.arreglos ?? 0) === 1 ? "arreglo" : "arreglos"}</span>
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+          <li className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+            <span className="font-semibold">Total de todos los botes</span>
+            <span className="font-semibold">{formatoPesos(gastoTodos)}</span>
+          </li>
+        </ul>
+        <a href="/api/exportar?tipo=gomon" className="boton !min-h-9 text-sm" download>
+          <Download size={15} aria-hidden /> Descargar todos los botes
+        </a>
       </section>
     </div>
   );

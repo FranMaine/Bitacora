@@ -18,7 +18,24 @@ const FASES = [
   "Largada", "Primera ceñida", "Aproximación al barlovento", "Través (reach)", "Popa", "Gate", "Segunda ceñida",
 ];
 const CRITERIOS = [
-  "Técnica de maniobras", "Trimado de velas", "Táctica", "Reglas", "Actitud y compromiso", "Autonomía",
+  "Armado y puesta a punto",
+  "Nomenclatura / teoría",
+  "Maniobras (trasluchadas - roll tack - viradas de boyas - 720)",
+  "Llevada en franco c/ viento",
+  "Llevada en franco c/ calma",
+  "Llevada en ceñida c/ viento",
+  "Llevada en ceñida c/ calma",
+  "Estrategias / tácticas",
+  "Conocimiento del reglamento - banderas de regata - tipos de recorrido",
+  "Postura en el barco",
+  "Desenvolvimiento en situaciones difíciles (problemáticas)",
+  "Largadas (estrategia, técnicas y tácticas)",
+  "Técnicas con olas - francos",
+  "Técnicas con olas - ceñida",
+  "Comportamiento con compañeros e instructores",
+  "Cuidado del barco",
+  "Predisposición a superarse",
+  "Trabajo en equipo",
 ];
 
 async function main() {
@@ -34,7 +51,9 @@ async function main() {
   for (const [i, nombre] of FASES.entries()) {
     await db.faseRegata.upsert({ where: { nombre }, update: {}, create: { nombre, orden: i } });
   }
-  await db.embarcacion.upsert({ where: { nombre: "Gomón" }, update: {}, create: { nombre: "Gomón", orden: 0 } });
+  for (const n of [2, 3, 4, 5, 6, 7, 8]) {
+    await db.embarcacion.upsert({ where: { nombre: `Bote ${n}` }, update: {}, create: { nombre: `Bote ${n}`, orden: n } });
+  }
   console.log(`Listo: ${CATEGORIAS.length} categorías, ${TEMAS.length} temas, ${CRITERIOS.length} criterios, ${FASES.length} fases de regata.`);
 }
 

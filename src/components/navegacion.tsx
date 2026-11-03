@@ -9,7 +9,7 @@ const ITEMS = [
   { href: "/alumnos", texto: "Alumnos", Icono: Users },
   { href: "/evaluar", texto: "Evaluar", Icono: ClipboardCheck },
   { href: "/estadisticas", texto: "Estadísticas", Icono: BarChart3 },
-  { href: "/gomon", texto: "Gomón", Icono: Wrench },
+  { href: "/gomon", texto: "Botes", Icono: Wrench },
   { href: "/ajustes", texto: "Ajustes", Icono: Settings },
 ];
 
