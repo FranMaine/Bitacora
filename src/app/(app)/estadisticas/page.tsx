@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Filtros } from "@/components/filtros";
 import { ChevronLeft, ChevronRight, Download, Waves, Wind } from "lucide-react";
 import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
@@ -232,28 +233,13 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
         <p className="mt-1 text-suave">Solo cuentan los entrenamientos dados por realizados.</p>
       </div>
 
-      <div className="sin-barra -mx-4 overflow-x-auto px-4 pb-1" role="tablist" aria-label="Categoría">
-        <div className="flex gap-6 border-b border-borde">
-          {[{ id: null as string | null, nombre: "Todas" }, ...categorias].map((c) => {
-            const activa = (c.id ?? null) === (categoria?.id ?? null);
-            return (
-              <Link
-                key={c.id ?? "todas"}
-                href={q({ categoria: c.id })}
-                role="tab"
-                aria-selected={activa}
-                className="group shrink-0 whitespace-nowrap px-1 py-2.5 text-sm font-medium text-suave transition-colors duration-[160ms] aria-selected:text-acento hover:text-texto aria-selected:hover:text-acento"
-              >
-                {c.nombre}
-                <span
-                  aria-hidden
-                  className="pointer-events-none mt-2 block h-[2px] origin-left scale-x-0 bg-acento transition-transform duration-[220ms] ease-[cubic-bezier(0.23,1,0.32,1)] group-aria-selected:scale-x-100"
-                />
-              </Link>
-            );
-          })}
-        </div>
-      </div>
+      <Filtros etiqueta="Categoría">
+        {[{ id: null as string | null, nombre: "Todas" }, ...categorias].map((c) => (
+          <Link key={c.id ?? "todas"} href={q({ categoria: c.id })} aria-current={(c.id ?? null) === (categoria?.id ?? null) ? "true" : undefined} className="filtro">
+            {c.nombre}
+          </Link>
+        ))}
+      </Filtros>
 
       <div className="flex items-center justify-between gap-2">
         <Link href={q({ mes: periodoAnterior(periodo) })} className="boton" aria-label="Mes anterior"><ChevronLeft size={18} aria-hidden /></Link>
@@ -541,7 +527,7 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
                     <Link href={`/alumnos/${a.id}`} className="flex items-center gap-3 py-2.5 transition-colors hover:text-acento">
                       <Avatar nombre={a.nombre} tam={32} />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{a.nombre}</p>
+                        <p className="text-sm font-medium [overflow-wrap:anywhere]">{a.nombre}</p>
                         <p className="text-xs text-suave">
                           {s ? `${s.presentes}/${s.total} salidas · ${s.minutos ? formatoDuracion(s.minutos) : "sin horas"}` : "sin salidas en el período"}
                         </p>

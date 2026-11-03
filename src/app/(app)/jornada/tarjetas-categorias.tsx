@@ -90,7 +90,7 @@ function Tarjeta({ fecha, categoria: c }: { fecha: string; categoria: TarjetaCat
               {c.viento && ` · viento ${c.viento}`}
               {c.corriente && ` · corriente ${c.corriente}`}
             </p>
-            {c.temas.length > 0 && <p className="mt-1 truncate text-sm text-suave">{c.temas.join(", ")}</p>}
+            {c.temas.length > 0 && <p className="mt-1 text-sm text-suave [overflow-wrap:anywhere]">{c.temas.join(", ")}</p>}
           </div>
         </div>
         <div className="hidden shrink-0 items-center gap-2 sm:flex">

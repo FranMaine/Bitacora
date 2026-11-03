@@ -14,8 +14,7 @@ export function FormularioAlta({ categorias }: { categorias: { id: string; nombr
   }, [estado]);
 
   return (
-    <form action={accion} className="caja space-y-3 p-4">
-      <h2 className="font-semibold">Agregar alumnos</h2>
+    <form action={accion} className="space-y-3 pt-1">
       <div>
         <label htmlFor="categoriaId" className="etiqueta">Categoría</label>
         <select id="categoriaId" name="categoriaId" required className="campo" defaultValue="">

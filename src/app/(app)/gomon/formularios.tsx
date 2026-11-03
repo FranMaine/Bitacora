@@ -69,7 +69,7 @@ export function MarcarArreglado({ id, fechaObservada, hoy }: { id: string; fecha
     <form action={accion} className="aparecer w-full space-y-3 rounded-[12px] border border-borde bg-fondo/60 p-3">
       <div>
         <label htmlFor={`solucion-${id}`} className="etiqueta">¿Qué se hizo? (opcional)</label>
-        <textarea id={`solucion-${id}`} name="solucion" rows={2} maxLength={1000} className="campo text-sm" placeholder="Ej.: se parchó el flotador y se infló a presión…" />
+        <textarea id={`solucion-${id}`} name="solucion" rows={2} maxLength={1000} className="campo" placeholder="Ej.: se parchó el flotador y se infló a presión…" />
       </div>
       <div>
         <label htmlFor={`resuelto-${id}`} className="etiqueta">Fecha del arreglo</label>
@@ -77,7 +77,7 @@ export function MarcarArreglado({ id, fechaObservada, hoy }: { id: string; fecha
       </div>
       <div>
         <label htmlFor={`costo-${id}`} className="etiqueta">Costo del arreglo en pesos (opcional)</label>
-        <input id={`costo-${id}`} name="costo" inputMode="numeric" autoComplete="off" placeholder="Ej.: 25000" className="campo text-sm" />
+        <input id={`costo-${id}`} name="costo" inputMode="numeric" autoComplete="off" placeholder="Ej.: 25000" className="campo" />
       </div>
       <MensajeForm error={estado.error} ok={estado.ok} />
       <div className="flex gap-2">
@@ -105,7 +105,7 @@ export function EditarCosto({ id, costo }: { id: string; costo: number | null })
   return (
     <form action={accion} className="aparecer flex w-full flex-wrap items-center gap-2">
       <label htmlFor={`editar-costo-${id}`} className="sr-only">Costo en pesos</label>
-      <input id={`editar-costo-${id}`} name="costo" inputMode="numeric" autoComplete="off" defaultValue={costo ?? ""} placeholder="Pesos" className="campo !min-h-10 min-w-0 flex-1 text-sm" />
+      <input id={`editar-costo-${id}`} name="costo" inputMode="numeric" autoComplete="off" defaultValue={costo ?? ""} placeholder="Pesos" className="campo !min-h-10 min-w-0 flex-1" />
       <button type="submit" disabled={pendiente} className="boton boton-primario !min-h-10 text-sm">{pendiente ? "…" : "Guardar"}</button>
       <button type="button" onClick={() => setAbierto(false)} className="boton !min-h-10 text-sm">Cerrar</button>
       <MensajeForm error={estado.error} ok={estado.ok} />

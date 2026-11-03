@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Filtros } from "@/components/filtros";
 import { AlertTriangle, CheckCircle2, Download, RotateCcw, Trash2 } from "lucide-react";
 import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
@@ -74,27 +75,18 @@ export default async function PaginaGomon({ searchParams }: { searchParams: Prom
       </div>
 
       {embarcaciones.length > 1 && (
-        <div className="sin-barra -mx-4 overflow-x-auto px-4 pb-1" role="tablist" aria-label="Embarcación">
-          <div className="flex gap-6 border-b border-borde">
-            {embarcaciones.map((e) => (
-              <Link
-                key={e.id}
-                href={`/gomon?bote=${e.id}`}
-                role="tab"
-                aria-selected={e.id === embarcacion.id}
-                className="group shrink-0 whitespace-nowrap px-1 py-2.5 text-sm font-medium text-suave transition-colors duration-[160ms] aria-selected:text-acento hover:text-texto aria-selected:hover:text-acento"
-              >
-                {e.nombre}
-                {(pendientesPorBote.get(e.id) ?? 0) > 0 && (
-                  <span className="ml-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-alerta-suave px-1.5 text-[0.6875rem] font-semibold text-alerta" title="Observaciones pendientes">
-                    {pendientesPorBote.get(e.id)}
-                  </span>
-                )}
-                <span aria-hidden className="pointer-events-none mt-2 block h-[2px] origin-left scale-x-0 bg-acento transition-transform duration-[220ms] ease-[cubic-bezier(0.23,1,0.32,1)] group-aria-selected:scale-x-100" />
-              </Link>
-            ))}
-          </div>
-        </div>
+        <Filtros etiqueta="Embarcación">
+          {embarcaciones.map((e) => (
+            <Link key={e.id} href={`/gomon?bote=${e.id}`} aria-current={e.id === embarcacion.id ? "true" : undefined} className="filtro">
+              {e.nombre}
+              {(pendientesPorBote.get(e.id) ?? 0) > 0 && (
+                <span className="filtro-cuenta" title="Observaciones pendientes">
+                  {pendientesPorBote.get(e.id)}
+                </span>
+              )}
+            </Link>
+          ))}
+        </Filtros>
       )}
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">

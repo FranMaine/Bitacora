@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Filtros } from "@/components/filtros";
 import { ChevronRight } from "lucide-react";
 import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
@@ -52,25 +53,13 @@ export default async function PaginaEvaluar({ searchParams }: { searchParams: Pr
         </p>
       </div>
 
-      <div className="sin-barra -mx-4 overflow-x-auto px-4 pb-1" role="tablist" aria-label="Categoría">
-        <div className="relative flex gap-6 border-b border-borde">
-          {categorias.map((c) => (
-            <Link
-              key={c.id}
-              href={enlaceCat(c.id, Boolean(soloPendientes))}
-              role="tab"
-              aria-selected={c.id === categoriaId}
-              className="group shrink-0 whitespace-nowrap px-1 py-2.5 text-sm font-medium text-suave transition-colors duration-[160ms] aria-selected:text-acento hover:text-texto aria-selected:hover:text-acento"
-            >
-              {c.nombre}
-              <span
-                aria-hidden
-                className="pointer-events-none mt-2 block h-[2px] origin-left scale-x-0 bg-acento transition-transform duration-[220ms] ease-[cubic-bezier(0.23,1,0.32,1)] group-aria-selected:scale-x-100"
-              />
-            </Link>
-          ))}
-        </div>
-      </div>
+      <Filtros etiqueta="Categoría">
+        {categorias.map((c) => (
+          <Link key={c.id} href={enlaceCat(c.id, Boolean(soloPendientes))} aria-current={c.id === categoriaId ? "true" : undefined} className="filtro">
+            {c.nombre}
+          </Link>
+        ))}
+      </Filtros>
 
       {categoriaId &&
         (alumnos.length === 0 ? (
@@ -100,7 +89,7 @@ export default async function PaginaEvaluar({ searchParams }: { searchParams: Pr
                   <Link href={`/evaluar/${a.id}`} className="flex min-h-14 items-center gap-3 px-4 py-2 transition-colors hover:bg-acento-suave">
                     <Avatar nombre={a.nombre} tam={36} />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate">{a.nombre}</p>
+                      <p className="[overflow-wrap:anywhere]">{a.nombre}</p>
                       <p className="text-xs text-suave">
                         {ultima && dias !== null
                           ? `Última: ${fechaCorta(deFechaDB(ultima.fecha))} (${haceCuanto(dias)}) · ${a.evaluaciones.length} ${a.evaluaciones.length === 1 ? "evaluación" : "evaluaciones"}`

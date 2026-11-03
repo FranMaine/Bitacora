@@ -45,7 +45,12 @@ export default async function PaginaAlumnos() {
       <h1 className="display text-3xl sm:text-4xl">Alumnos</h1>
 
       {categorias.length > 0 ? (
-        <FormularioAlta categorias={categorias.map((c) => ({ id: c.id, nombre: c.nombre }))} />
+        <details className="caja p-4">
+          <summary className="cursor-pointer font-semibold">Agregar alumnos</summary>
+          <div className="mt-3">
+            <FormularioAlta categorias={categorias.map((c) => ({ id: c.id, nombre: c.nombre }))} />
+          </div>
+        </details>
       ) : (
         <p className="caja p-4 text-suave">
           Primero creá una categoría en <Link href="/ajustes" className="text-acento underline">Ajustes</Link>.

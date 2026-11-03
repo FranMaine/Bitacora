@@ -274,7 +274,7 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
                       className="size-5 shrink-0 accent-[var(--acento)]"
                     />
                     <Avatar nombre={a.nombre} tam={28} />
-                    <span className="truncate">{a.nombre}</span>
+                    <span className="min-w-0 [overflow-wrap:anywhere]">{a.nombre}</span>
                   </label>
                   {esRegata && fases.length > 0 && (
                     <button

@@ -117,7 +117,7 @@ html {
 button, a, [role="tab"], label[for], summary {
   touch-action: manipulation;
 }
-button, [role="tab"], .boton, .chip {
+button, [role="tab"], .boton, .chip, .filtro {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
@@ -345,10 +345,60 @@ body {
   }
 }
 
-/* Listas que se desplazan de costado (pestañas): sin la barra, se nota igual porque la última queda cortada. */
-.sin-barra {
-  scrollbar-width: none;
-}
-.sin-barra::-webkit-scrollbar {
-  display: none;
+
+/* Filtros (categorías, botes…): botones que se acomodan en las filas que hagan falta, sin deslizar de costado. */
+@layer components {
+  .filtro {
+    display: inline-flex;
+    min-height: 2.5rem;
+    align-items: center;
+    gap: 0.375rem;
+    border: 1px solid var(--borde);
+    border-radius: 9999px;
+    background: var(--superficie);
+    padding: 0.25rem 0.875rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25;
+    color: var(--texto-suave);
+    text-align: left;
+    overflow-wrap: anywhere;
+    transition:
+      background-color var(--dur-hover) var(--ease-out),
+      border-color var(--dur-hover) var(--ease-out),
+      color var(--dur-hover) var(--ease-out),
+      transform 100ms var(--ease-out);
+  }
+  .filtro:active {
+    transform: scale(0.97);
+  }
+  .filtro[aria-current="true"],
+  .filtro[aria-pressed="true"] {
+    border-color: var(--acento);
+    background: var(--acento-suave);
+    color: var(--acento);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .filtro:hover {
+      color: var(--texto);
+      border-color: var(--texto-suave);
+    }
+    .filtro[aria-current="true"]:hover,
+    .filtro[aria-pressed="true"]:hover {
+      color: var(--acento);
+      border-color: var(--acento);
+    }
+  }
+  .filtro-cuenta {
+    display: inline-flex;
+    min-width: 1.25rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background: var(--alerta-suave);
+    padding: 0 0.375rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--alerta);
+  }
 }

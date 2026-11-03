@@ -104,10 +104,10 @@ export default async function PaginaAjustes() {
           {instructores.map((i) => (
             <li key={i.id} className="flex items-center justify-between gap-3 py-2">
               <div className="min-w-0">
-                <p className={`truncate font-medium ${i.activo ? "" : "text-suave line-through"}`}>
+                <p className={`font-medium [overflow-wrap:anywhere] ${i.activo ? "" : "text-suave line-through"}`}>
                   {i.nombre} {i.id === yo.id && <span className="chip ml-1">vos</span>}
                 </p>
-                <p className="truncate text-sm text-suave">{i.email}</p>
+                <p className="text-sm text-suave [overflow-wrap:anywhere]">{i.email}</p>
               </div>
               {i.id !== yo.id && (
                 <form action={cambiarActivoInstructor.bind(null, i.id, !i.activo)}>
