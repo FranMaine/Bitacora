@@ -73,6 +73,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es-AR" className={`${geist.variable} ${playfair.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
+        {/* Next ya no emite esta etiqueta (solo "mobile-web-app-capable", sin el prefijo apple-), pero Safari
+            la sigue necesitando: sin ella ignora las apple-touch-startup-image y muestra pantalla negra al abrir. */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
         {/* Antes de pintar: tema elegido con el botón sol/luna o, si no hay, el del sistema (sin parpadeo). */}
         <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} />
       </head>
