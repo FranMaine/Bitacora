@@ -14,6 +14,8 @@ export async function proxy(request: NextRequest) {
   if (pathname === "/login" || pathname === "/registro") {
     return logueado ? NextResponse.redirect(new URL("/", request.url)) : NextResponse.next();
   }
+  // Recuperar la contraseña también es público (quien la olvidó no puede estar logueado).
+  if (pathname === "/recuperar" || pathname === "/restablecer") return NextResponse.next();
   if (!logueado) return NextResponse.redirect(new URL("/login", request.url));
   return NextResponse.next();
 }

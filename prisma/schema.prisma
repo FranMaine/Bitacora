@@ -21,6 +21,20 @@ model Instructor {
   evaluaciones   Evaluacion[]
   mantenimientosCreados   Mantenimiento[] @relation("MantenimientoCreadoPor")
   mantenimientosResueltos Mantenimiento[] @relation("MantenimientoResueltoPor")
+  reseteosClave           ReseteoClave[]
+}
+
+// Link de "olvidé mi contraseña": solo se guarda el hash del código que viaja en el mail.
+model ReseteoClave {
+  id           String     @id @default(cuid())
+  instructorId String
+  instructor   Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  tokenHash    String     @unique
+  expiraEn     DateTime
+  usadoEn      DateTime?
+  createdAt    DateTime   @default(now())
+
+  @@index([instructorId])
 }
 
 // Grupo de alumnos (se distinguen por categoría): "Optimist Principiantes", "ILCA 4"...

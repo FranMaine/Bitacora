@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { iniciarSesion, type EstadoLogin } from "./actions";
 
-export function FormularioLogin() {
+export function FormularioLogin({ conRecuperar }: { conRecuperar: boolean }) {
   const [estado, accion, pendiente] = useActionState<EstadoLogin, FormData>(iniciarSesion, {});
 
   return (
@@ -22,6 +23,13 @@ export function FormularioLogin() {
       <button type="submit" disabled={pendiente} className="boton boton-primario w-full">
         {pendiente ? "Ingresando…" : "Ingresar"}
       </button>
+      {conRecuperar && (
+        <p className="text-center text-sm">
+          <Link href="/recuperar" className="font-medium text-acento underline underline-offset-4">
+            Olvidé mi contraseña
+          </Link>
+        </p>
+      )}
     </form>
   );
 }

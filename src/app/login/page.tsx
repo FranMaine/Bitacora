@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { FormularioLogin } from "./formulario";
 import { BotonTema } from "@/components/boton-tema";
+import { mailConfigurado } from "@/lib/mail";
 
 export const metadata: Metadata = { title: "Ingresar" };
 
@@ -16,7 +17,7 @@ export default function PaginaLogin() {
         <Image src="/cvsi.webp" alt="CVSI" width={400} height={207} className="h-14 w-auto" priority />
         <h1 className="display mt-4 text-4xl">Bitácora</h1>
         <p className="mt-2 text-suave">Entrenamientos, asistencia y evaluaciones. Solo para instructores.</p>
-        <FormularioLogin />
+        <FormularioLogin conRecuperar={mailConfigurado()} />
         <p className="mt-6 text-sm text-suave">
           ¿Primera vez?{" "}
           <Link href="/registro" className="font-medium text-acento underline underline-offset-4">
