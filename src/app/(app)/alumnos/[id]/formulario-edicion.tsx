@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useTransition } from "react";
 import { guardarAlumno } from "../actions";
 import type { EstadoForm } from "../actions";
 import { MensajeForm } from "@/components/mensaje-form";
@@ -12,8 +12,16 @@ type Props = {
 
 export function FormularioEdicion({ alumno, categorias }: Props) {
   const [estado, accion, pendiente] = useActionState<EstadoForm, FormData>(guardarAlumno.bind(null, alumno.id), {});
+  const [, iniciar] = useTransition();
+  // Con <form action> React 19 reinicia el formulario al guardar y el desplegable de categoría volvía a mostrar
+  // la categoría vieja; con onSubmit queda lo que se eligió.
+  function alEnviar(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const datos = new FormData(e.currentTarget);
+    iniciar(() => accion(datos));
+  }
   return (
-    <form action={accion} className="caja space-y-3 p-4">
+    <form onSubmit={alEnviar} className="caja space-y-3 p-4">
       <div>
         <label htmlFor="nombre" className="etiqueta">Nombre</label>
         <input id="nombre" name="nombre" defaultValue={alumno.nombre} required className="campo" />

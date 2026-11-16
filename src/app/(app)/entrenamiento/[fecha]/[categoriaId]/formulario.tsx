@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useState, useTransition } from "react";
 import { ChevronDown, Check, Clock, MessageSquare, MessageSquareText, Waves, Wind } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { guardarEntrenamiento, type EstadoEntrenamiento } from "./actions";
@@ -23,6 +23,8 @@ type Props = {
     vientoEstabilidad: string;
     corrienteDir: string;
     corrienteNudos: string;
+    /** momento de la última modificación al abrir (ver lib/version.ts) */
+    version: string;
     realizado: boolean;
     existe: boolean;
     temasPlan: string[];
@@ -58,10 +60,22 @@ function alternarEn(set: Set<string>, id: string): Set<string> {
 }
 
 export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fases, inicial }: Props) {
-  const accion = guardarEntrenamiento.bind(null, fecha, categoriaId);
+  // Si se corta la conexión (en el agua pasa), el guardado falla pero lo cargado queda en pantalla.
+  const accion = async (previo: EstadoEntrenamiento, datos: FormData): Promise<EstadoEntrenamiento> => {
+    try {
+      return await guardarEntrenamiento(fecha, categoriaId, previo, datos);
+    } catch {
+      return { error: "No se pudo guardar: parece que no hay conexión. Lo que cargaste sigue acá; probá de nuevo cuando vuelva la señal." };
+    }
+  };
   const [estado, enviar, pendiente] = useActionState<EstadoEntrenamiento, FormData>(accion, {});
-  // Todos los campos son controlados: al terminar una acción React reinicia los
-  // campos no controlados a su valor inicial y se vería como si se hubiera borrado lo guardado.
+  // Con qué versión del entrenamiento se abrió (se actualiza en cada guardado) para no pisar cambios de otros.
+  const [version, setVersion] = useState(inicial.version);
+  // Todos los campos son controlados. Ojo: con <form action={...}> React 19 REINICIA el formulario al terminar
+  // de guardar, y los desplegables (viento) quedaban en "Sin cargar" en pantalla: el guardado siguiente
+  // mandaba el viento vacío y borraba lo ya guardado. Por eso se envía con onSubmit (ver alEnviar) y el
+  // formulario nunca se reinicia.
+  const [, iniciar] = useTransition();
   const [tipo, setTipo] = useState(inicial.tipo);
   const [bajada, setBajada] = useState(inicial.horaBajada);
   const [regreso, setRegreso] = useState(inicial.horaRegreso);
@@ -95,7 +109,10 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
   const [estadoVisto, setEstadoVisto] = useState(estado);
   if (estado !== estadoVisto) {
     setEstadoVisto(estado);
-    if (estado.guardado) setBase(instantanea);
+    if (estado.guardado) {
+      setBase(instantanea);
+      if (estado.version) setVersion(estado.version);
+    }
   }
   useEffect(() => {
     if (!sinGuardar) return;
@@ -106,6 +123,12 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
     window.addEventListener("beforeunload", avisar);
     return () => window.removeEventListener("beforeunload", avisar);
   }, [sinGuardar]);
+  function alEnviar(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    // el botón que se tocó (Guardar plan / Dar por realizado / Guardar igual) viaja como "accion" o "forzar"
+    const datos = new FormData(e.currentTarget, (e.nativeEvent as SubmitEvent).submitter);
+    iniciar(() => enviar(datos));
+  }
   const minutos = minutosEntre(bajada, regreso);
   const todos = alumnos.length > 0 && presentes.size === alumnos.length;
 
@@ -415,7 +438,8 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
   );
 
   return (
-    <form action={enviar} className="space-y-5">
+    <form onSubmit={alEnviar} className="space-y-5">
+      <input type="hidden" name="version" value={version} />
       {selectorTipo}
       {/* Orden pensado para el día: 1) horarios y condiciones, 2) asistencia (y en regata, la
           calificación por fase), 3) plan y temas, 4) cómo salió. */}
@@ -428,10 +452,28 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
         <p className="text-sm text-alerta">Hay cambios sin guardar.</p>
       )}
       {estado.error && <p role="alert" className="confirmar text-sm text-peligro">{estado.error}</p>}
+      {estado.conflicto && (
+        <div role="alert" className="confirmar space-y-3 rounded-[12px] border border-alerta bg-alerta-suave p-4 text-sm">
+          <p className="font-semibold text-alerta">Ojo: alguien cambió este entrenamiento</p>
+          <p>{estado.conflicto}</p>
+          <p className="text-suave">
+            Lo más seguro es ver lo último guardado y cargar de nuevo lo que falte. Si tenés la certeza de que lo tuyo es lo correcto, podés guardar igual (reemplaza lo anterior).
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => window.location.reload()} className="boton boton-primario !min-h-10">
+              Ver lo último guardado
+            </button>
+            <button type="submit" name="forzar" value={estado.accion ?? "plan"} disabled={pendiente} className="boton !min-h-10">
+              Guardar igual
+            </button>
+          </div>
+        </div>
+      )}
       {estado.guardado && (
         <p role="status" className="confirmar flex items-center gap-1.5 text-sm text-ok">
           <Check size={16} aria-hidden />
-          {estado.guardado === "realizado" ? "Guardado como realizado." : "Plan guardado."}
+          {estado.guardado === "realizado" ? "Guardado como realizado" : "Plan guardado"}
+          {estado.guardadoEn ? ` a las ${estado.guardadoEn}.` : "."}
         </p>
       )}
 

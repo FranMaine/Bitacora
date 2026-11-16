@@ -5,9 +5,19 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
 import { aFechaDB } from "@/lib/fechas";
+import { hayConflicto, horaArgentina, versionDe } from "@/lib/version";
 import { direccionVientoValida, estabilidadVientoValida, fuerzaVientoValida, horaValida } from "@/lib/calculos";
 
-export type EstadoEntrenamiento = { error?: string; guardado?: "plan" | "realizado" };
+export type EstadoEntrenamiento = {
+  error?: string;
+  guardado?: "plan" | "realizado";
+  /** versión nueva del entrenamiento tras guardar (el formulario la manda en el próximo guardado) */
+  version?: string;
+  guardadoEn?: string;
+  /** el entrenamiento cambió desde que se abrió: no se guardó nada y se pregunta qué hacer */
+  conflicto?: string;
+  accion?: "plan" | "realizado";
+};
 
 const Hora = z.string().trim().refine((h) => h === "" || horaValida(h), "Hora inválida");
 const Texto = z.string().trim().max(4000);
@@ -56,7 +66,10 @@ export async function guardarEntrenamiento(
     return { error: "El regreso tiene que ser posterior a la bajada al agua." };
   }
 
-  const realizado = formData.get("accion") === "realizado";
+  // "Guardar igual" (después de un aviso de conflicto) manda forzar=plan|realizado en lugar de accion.
+  const forzar = formData.get("forzar") !== null;
+  const versionDelFormulario = String(formData.get("version") ?? "");
+  const realizado = (forzar ? formData.get("forzar") : formData.get("accion")) === "realizado";
   if (realizado && (!horaBajada || !horaRegreso)) {
     return { error: "Para dar el entrenamiento por realizado cargá la hora de bajada y la de regreso." };
   }
@@ -103,13 +116,22 @@ export async function guardarEntrenamiento(
     resumen: resumen || null,
   };
 
-  await db.$transaction(async (tx) => {
+  const resultado = await db.$transaction(async (tx) => {
+    // Se bloquea la fila: dos guardados al mismo tiempo se hacen de a uno y el segundo ve el cambio del primero.
+    const actual = (
+      await tx.$queryRaw<{ updatedAt: Date }[]>`SELECT "updatedAt" FROM "Entrenamiento" WHERE "fecha" = ${fechaDB}::date AND "categoriaId" = ${categoriaId} FOR UPDATE`
+    )[0];
+    if (!forzar && hayConflicto(versionDelFormulario, actual?.updatedAt)) {
+      return {
+        conflicto: `Este entrenamiento se volvió a guardar a las ${horaArgentina(actual!.updatedAt)}, después de que abriste esta pantalla (otra persona, otro celular o esta misma app abierta de antes). No se guardó nada para no pisar lo que ya estaba.`,
+      } as const;
+    }
     const e = await tx.entrenamiento.upsert({
       where: { fecha_categoriaId: { fecha: fechaDB, categoriaId } },
       // "Guardar plan" sobre un entrenamiento ya realizado no lo des-marca.
       update: realizado ? { ...datos, realizado: true } : datos,
       create: { ...datos, realizado, fecha: fechaDB, categoriaId, creadoPorId: instructor.id },
-      select: { id: true },
+      select: { id: true, updatedAt: true },
     });
     await tx.entrenamientoTema.deleteMany({ where: { entrenamientoId: e.id } });
     await tx.asistencia.deleteMany({ where: { entrenamientoId: e.id } });
@@ -135,10 +157,12 @@ export async function guardarEntrenamiento(
         };
       }),
     });
+    return { version: versionDe(e.updatedAt) } as const;
   });
+  if ("conflicto" in resultado) return { conflicto: resultado.conflicto, accion: realizado ? "realizado" : "plan" };
 
   revalidatePath("/jornada");
   revalidatePath("/estadisticas");
   revalidatePath(`/entrenamiento/${fecha}/${categoriaId}`);
-  return { guardado: realizado ? "realizado" : "plan" };
+  return { guardado: realizado ? "realizado" : "plan", version: resultado.version, guardadoEn: horaArgentina(new Date()) };
 }

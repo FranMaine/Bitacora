@@ -4,6 +4,7 @@ import { ChevronLeft } from "lucide-react";
 import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
 import { aFechaDB, fechaLarga } from "@/lib/fechas";
+import { versionDe } from "@/lib/version";
 import { LogoClase } from "@/components/logo-clase";
 import { FormularioEntrenamiento } from "./formulario";
 
@@ -81,6 +82,7 @@ export default async function PaginaEntrenamiento({ params }: { params: Promise<
           vientoDir: entrenamiento?.vientoDir ?? "",
           vientoFuerza: entrenamiento?.vientoFuerza ?? "",
           vientoEstabilidad: entrenamiento?.vientoEstabilidad ?? "",
+          version: versionDe(entrenamiento?.updatedAt),
           realizado: entrenamiento?.realizado ?? false,
           existe: Boolean(entrenamiento),
           temasPlan: entrenamiento?.temas.filter((t) => t.planificado).map((t) => t.temaId) ?? [],
