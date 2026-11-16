@@ -77,6 +77,8 @@ async function enviarConGmail(para: string, mail: { asunto: string; texto: strin
     await transporte.sendMail({ from: `"Bitácora CVSI" <${usuario}>`, to: para, subject: mail.asunto, text: mail.texto, html: mail.html });
     return { ok: true };
   } catch (e) {
-    return { ok: false, motivo: e instanceof Error ? e.message : "Error desconocido" };
+    // Datos de formato (nunca los valores) para poder diagnosticar credenciales mal cargadas.
+    const forma = `usuario ${usuario.replace(/^(.).*(@.*)$/, "$1***$2")} (${usuario.length} caracteres), clave de ${clave.length} caracteres, solo letras: ${/^[a-z]+$/i.test(clave)}`;
+    return { ok: false, motivo: `${e instanceof Error ? e.message : "Error desconocido"} [${forma}]` };
   }
 }
