@@ -1,16 +1,20 @@
+import nodemailer from "nodemailer";
 import { VIGENCIA_MINUTOS } from "@/lib/reseteo";
 
-// Envío de mails con Resend (https://resend.com). Se configura con variables de entorno:
-//   RESEND_API_KEY  clave de la API
-//   MAIL_FROM       remitente con dominio verificado en Resend, ej.: "Bitácora CVSI <no-responder@tudominio.com>"
+// Envío de mails. Se configura con variables de entorno, según el servicio:
+//   Gmail (no pide dominio):  GMAIL_USER (la cuenta) y GMAIL_APP_PASSWORD (contraseña de aplicación de 16 letras)
+//   Resend (pide dominio verificado): RESEND_API_KEY y MAIL_FROM, ej.: "Bitácora CVSI <no-responder@tudominio.com>"
 //   MAIL_CONSOLA=1  solo para probar en local: en lugar de enviar, muestra el mail en la consola del servidor
+// Si están los dos servicios, se usa Resend.
 
 export type ResultadoMail = { ok: true } | { ok: false; motivo: string };
 
 const escapar = (t: string) => t.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 /** ¿Está configurado el envío? Si no, la recuperación por mail no se ofrece. */
-export const mailConfigurado = () => process.env.MAIL_CONSOLA === "1" || Boolean(process.env.RESEND_API_KEY && process.env.MAIL_FROM);
+const conResend = () => Boolean(process.env.RESEND_API_KEY && process.env.MAIL_FROM);
+const conGmail = () => Boolean(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD);
+export const mailConfigurado = () => process.env.MAIL_CONSOLA === "1" || conResend() || conGmail();
 
 export function mailReseteo(nombre: string, enlace: string) {
   const primerNombre = nombre.trim().split(/\s+/)[0] || "";
@@ -38,9 +42,9 @@ export async function enviarMail(para: string, mail: { asunto: string; texto: st
     console.log(`[mail de prueba] para: ${para}\nasunto: ${mail.asunto}\n${mail.texto}`);
     return { ok: true };
   }
-  const clave = process.env.RESEND_API_KEY;
-  const desde = process.env.MAIL_FROM;
-  if (!clave || !desde) return { ok: false, motivo: "Faltan RESEND_API_KEY o MAIL_FROM" };
+  if (!conResend()) return conGmail() ? enviarConGmail(para, mail) : { ok: false, motivo: "No hay servicio de mail configurado" };
+  const clave = process.env.RESEND_API_KEY!;
+  const desde = process.env.MAIL_FROM!;
 
   try {
     const r = await fetch("https://api.resend.com/emails", {
@@ -50,6 +54,27 @@ export async function enviarMail(para: string, mail: { asunto: string; texto: st
       signal: AbortSignal.timeout(10_000),
     });
     if (!r.ok) return { ok: false, motivo: `Resend respondió ${r.status}: ${(await r.text()).slice(0, 300)}` };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, motivo: e instanceof Error ? e.message : "Error desconocido" };
+  }
+}
+
+async function enviarConGmail(para: string, mail: { asunto: string; texto: string; html: string }): Promise<ResultadoMail> {
+  const usuario = process.env.GMAIL_USER!;
+  // Las contraseñas de aplicación de Google se muestran con espacios; sin ellos funcionan igual.
+  const clave = process.env.GMAIL_APP_PASSWORD!.replace(/\s+/g, "");
+  try {
+    const transporte = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: { user: usuario, pass: clave },
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 15_000,
+    });
+    await transporte.sendMail({ from: `"Bitácora CVSI" <${usuario}>`, to: para, subject: mail.asunto, text: mail.texto, html: mail.html });
     return { ok: true };
   } catch (e) {
     return { ok: false, motivo: e instanceof Error ? e.message : "Error desconocido" };

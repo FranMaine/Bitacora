@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { enlaceDeReseteo, hashToken, nuevoToken, urlDeLaApp, vencimiento, VIGENCIA_MINUTOS } from "../reseteo";
-import { mailReseteo } from "../mail";
+import { enviarMail, mailConfigurado, mailReseteo } from "../mail";
 
 describe("código de recuperación", () => {
   it("el hash es el de sha256 y no revela el código", () => {
@@ -45,5 +45,35 @@ describe("mail", () => {
     expect(m.texto.startsWith("Hola Ale,")).toBe(true);
     expect(m.html).toContain("t=abc&amp;u=1");
     expect(m.html).not.toContain("<script>");
+  });
+});
+
+describe("configuración del mail", () => {
+  const original = { ...process.env };
+  afterEach(() => {
+    process.env = { ...original };
+  });
+  const limpiar = () => {
+    for (const k of ["RESEND_API_KEY", "MAIL_FROM", "GMAIL_USER", "GMAIL_APP_PASSWORD", "MAIL_CONSOLA"]) delete process.env[k];
+  };
+  it("sin variables no está configurado y no envía", async () => {
+    limpiar();
+    expect(mailConfigurado()).toBe(false);
+    const r = await enviarMail("a@b.test", mailReseteo("A", "https://x.test"));
+    expect(r.ok).toBe(false);
+  });
+  it("alcanza con Gmail (usuario y contraseña de aplicación)", () => {
+    limpiar();
+    process.env.GMAIL_USER = "club@gmail.com";
+    expect(mailConfigurado()).toBe(false);
+    process.env.GMAIL_APP_PASSWORD = "abcd efgh ijkl mnop";
+    expect(mailConfigurado()).toBe(true);
+  });
+  it("Resend necesita la clave y el remitente", () => {
+    limpiar();
+    process.env.RESEND_API_KEY = "re_x";
+    expect(mailConfigurado()).toBe(false);
+    process.env.MAIL_FROM = "Club <a@dominio.test>";
+    expect(mailConfigurado()).toBe(true);
   });
 });
