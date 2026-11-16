@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resumir, avanceEvaluaciones, resumenFases, type EntrenamientoResumen, type EvaluacionSimple } from "../estadisticas";
+import { resumir, avanceEvaluaciones, resumenFases, type EntrenamientoResumen, type EvaluacionSimple , resumenPronostico } from "../estadisticas";
 
 const base = { horaBajada: "10:00", horaRegreso: "12:00", presentes: 8, total: 10, temasHechos: [] as string[] };
 
@@ -83,5 +83,15 @@ describe("resumenFases", () => {
   it("ignora valores fuera de 1-3 y tolera la lista vacía", () => {
     expect(resumenFases([])).toEqual([]);
     expect(resumenFases([n("x", 0, 9)])).toEqual([]);
+  });
+});
+
+describe("resumenPronostico", () => {
+  it("cuenta solo las salidas que respondieron", () => {
+    expect(resumenPronostico([true, true, false, null, undefined])).toEqual({ respondidos: 3, cumplidos: 2, pct: 67 });
+  });
+  it("sin respuestas no hay porcentaje", () => {
+    expect(resumenPronostico([null, undefined])).toEqual({ respondidos: 0, cumplidos: 0, pct: null });
+    expect(resumenPronostico([])).toEqual({ respondidos: 0, cumplidos: 0, pct: null });
   });
 });

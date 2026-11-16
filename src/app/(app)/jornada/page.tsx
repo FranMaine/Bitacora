@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { requerirInstructor } from "@/lib/auth";
 import { aFechaDB, fechaLarga, hoyAR, sumarDias } from "@/lib/fechas";
 import { formatoDuracion, minutosEntre, porcentaje, promedio, textoCorriente, textoViento } from "@/lib/calculos";
-import { resumenFases } from "@/lib/estadisticas";
+import { resumenFases, resumenPronostico } from "@/lib/estadisticas";
 import { SelectorFecha } from "@/components/selector-fecha";
 import { TarjetasCategorias } from "./tarjetas-categorias";
 
@@ -46,6 +46,7 @@ export default async function PaginaHoy({ searchParams }: { searchParams: Promis
   const presentesDia = hechos.reduce((s, e) => s + e.asistencias.filter((a) => a.presente).length, 0);
   const listadosDia = hechos.reduce((s, e) => s + e.asistencias.length, 0);
   const corrienteDia = promedio(hechos.map((e) => e.corrienteNudos).filter((n): n is number => n !== null));
+  const pronosticoDia = resumenPronostico(hechos.map((e) => e.pronosticoCumplido));
   const vientoDia = [...new Set(hechos.map((e) => textoViento(e.vientoDir, e.vientoFuerza, e.vientoEstabilidad)).filter((t): t is string => !!t))].join(" / ");
   const temasDia = [...new Set(hechos.flatMap((e) => e.temas.filter((t) => t.realizado).map((t) => t.tema.nombre)))];
   const fasesDia = resumenFases(
@@ -108,6 +109,16 @@ export default async function PaginaHoy({ searchParams }: { searchParams: Promis
                   <p className="font-semibold">
                     {vientoDia || "—"}
                   </p>
+                  {pronosticoDia.respondidos > 0 && (
+                    <p className="text-xs text-suave">
+                      Pronóstico:{" "}
+                      {pronosticoDia.cumplidos === pronosticoDia.respondidos
+                        ? "se cumplió"
+                        : pronosticoDia.cumplidos === 0
+                          ? "no se cumplió"
+                          : `se cumplió en ${pronosticoDia.cumplidos} de ${pronosticoDia.respondidos}`}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2 rounded-[12px] bg-borde/40 p-3 text-sm">

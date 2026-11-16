@@ -82,6 +82,7 @@ export default async function PaginaEntrenamiento({ params }: { params: Promise<
           vientoDir: entrenamiento?.vientoDir ?? "",
           vientoFuerza: entrenamiento?.vientoFuerza ?? "",
           vientoEstabilidad: entrenamiento?.vientoEstabilidad ?? "",
+          pronostico: entrenamiento?.pronosticoCumplido == null ? "" : entrenamiento.pronosticoCumplido ? "SI" : "NO",
           version: versionDe(entrenamiento?.updatedAt),
           realizado: entrenamiento?.realizado ?? false,
           existe: Boolean(entrenamiento),

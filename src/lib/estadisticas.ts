@@ -162,3 +162,10 @@ export function resumenFases(notas: NotaFaseSimple[]): ResumenFase[] {
     }))
     .sort((a, b) => a.promedio - b.promedio || a.orden - b.orden);
 }
+
+/** Cuántas veces se cumplió el pronóstico del viento entre las salidas que lo respondieron (las sin responder no cuentan). */
+export function resumenPronostico(valores: (boolean | null | undefined)[]): { respondidos: number; cumplidos: number; pct: number | null } {
+  const respondidos = valores.filter((v): v is boolean => typeof v === "boolean");
+  const cumplidos = respondidos.filter(Boolean).length;
+  return { respondidos: respondidos.length, cumplidos, pct: respondidos.length ? Math.round((cumplidos / respondidos.length) * 100) : null };
+}

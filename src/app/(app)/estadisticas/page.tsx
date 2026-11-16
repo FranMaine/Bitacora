@@ -20,7 +20,7 @@ import {
   textoEstabilidad,
   textoFuerza,
 } from "@/lib/calculos";
-import { avanceEvaluaciones, resumenFases, resumir } from "@/lib/estadisticas";
+import { avanceEvaluaciones, resumenFases, resumenPronostico, resumir } from "@/lib/estadisticas";
 import { Avatar } from "@/components/avatar";
 import { GraficoLinea } from "@/components/grafico-linea";
 import { LogoClase } from "@/components/logo-clase";
@@ -62,6 +62,7 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
         vientoDir: true,
         vientoFuerza: true,
         vientoEstabilidad: true,
+        pronosticoCumplido: true,
         tipo: true,
         corrienteNudos: true,
         corrienteDir: true,
@@ -112,6 +113,7 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
   const fuerzas = contar(enRango.map((e) => e.vientoFuerza));
   const estabilidades = contar(enRango.map((e) => e.vientoEstabilidad));
   const fuerzaFrecuente = fuerzas[0]?.[0] ?? null;
+  const pronostico = resumenPronostico(enRango.map((e) => e.pronosticoCumplido));
   const corrienteProm = promedio(enRango.map((e) => e.corrienteNudos).filter((n): n is number => n !== null));
 
   // --- regatas (días de regata dentro del filtro)
@@ -210,11 +212,13 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
       .filter((e) => periodoDe(deFechaDB(e.fecha)) === m)
       .map((e) => promedio(e.items.map((i) => i.valor)))
       .filter((x): x is number => x !== null);
-    return { mes: m, salidas: rm.cantidad, asistencia: rm.asistenciaPct, viento: masFrecuente(es.map((e) => e.vientoFuerza)), nota: promedio(notasMes) };
+    return { mes: m, salidas: rm.cantidad, asistencia: rm.asistenciaPct, viento: masFrecuente(es.map((e) => e.vientoFuerza)), nota: promedio(notasMes), pronostico: resumenPronostico(es.map((e) => e.pronosticoCumplido)).pct };
   });
 
   const serieAsistencia = serieMensual.filter((m) => m.asistencia !== null);
   const etiquetasAsistencia = etiquetasMeses(serieAsistencia.map((m) => m.mes));
+  const seriePronostico = serieMensual.filter((m) => m.pronostico !== null);
+  const etiquetasPronostico = etiquetasMeses(seriePronostico.map((m) => m.mes));
   const serieNota = serieMensual.filter((m) => m.nota !== null);
   const etiquetasNota = etiquetasMeses(serieNota.map((m) => m.mes));
 
@@ -351,6 +355,19 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
               />
             </div>
           )}
+          {serieMensual.some((m) => m.pronostico !== null) && (
+            <div>
+              <p className="mb-1 text-xs font-medium text-suave">Pronóstico cumplido por mes</p>
+              <GraficoLinea
+                titulo="Pronóstico cumplido por mes"
+                min={0}
+                max={100}
+                marcas={[0, 50, 100]}
+                sufijo="%"
+                puntos={seriePronostico.map((m, i) => ({ etiqueta: etiquetasPronostico[i], valor: m.pronostico! }))}
+              />
+            </div>
+          )}
           {serieMensual.some((m) => m.nota !== null) && (
             <div>
               <p className="mb-1 text-xs font-medium text-suave">Nota promedio por mes</p>
@@ -361,24 +378,24 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
             </div>
           )}
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[20rem] text-sm">
+            <table className="w-full min-w-[22rem] text-sm">
               <thead>
                 <tr className="text-left text-xs text-suave">
                   <th className="py-1 font-medium">Mes</th>
-                  <th className="py-1 text-right font-medium">Salidas</th>
-                  <th className="py-1 text-right font-medium">Asist.</th>
-                  <th className="py-1 text-right font-medium">Viento</th>
-                  <th className="py-1 text-right font-medium">Nota</th>
+                  <th className="py-1 pl-3 text-right font-medium">Salidas</th>
+                  <th className="py-1 pl-3 text-right font-medium">Asist.</th>
+                  <th className="py-1 pl-3 text-right font-medium">Viento</th>
+                  <th className="py-1 pl-3 text-right font-medium">Nota</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-borde">
                 {serieMensual.map((m, i) => (
                   <tr key={m.mes}>
                     <td className="py-2 first-letter:uppercase">{nombrePeriodo(m.mes)}</td>
-                    <td className="py-2 text-right">{m.salidas}</td>
-                    <td className="py-2 text-right">{m.asistencia === null ? "—" : `${m.asistencia}%`}</td>
-                    <td className="py-2 text-right">{m.viento ? textoFuerza(m.viento) : "—"}</td>
-                    <td className="py-2 text-right font-semibold">
+                    <td className="py-2 pl-3 text-right">{m.salidas}</td>
+                    <td className="py-2 pl-3 text-right">{m.asistencia === null ? "—" : `${m.asistencia}%`}</td>
+                    <td className="py-2 pl-3 text-right">{m.viento ? textoFuerza(m.viento) : "—"}</td>
+                    <td className="py-2 pl-3 text-right font-semibold">
                       {m.nota === null ? "—" : formatoNota(m.nota)}{" "}
                       {m.nota !== null && serieMensual[i - 1]?.nota != null && <Delta valor={m.nota - serieMensual[i - 1].nota!} />}
                     </td>
@@ -420,12 +437,21 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
         </section>
       )}
 
-      {(direcciones.length > 0 || fuerzas.length > 0 || estabilidades.length > 0) && (
+      {(direcciones.length > 0 || fuerzas.length > 0 || estabilidades.length > 0 || pronostico.respondidos > 0) && (
         <section className="caja space-y-3 p-4">
           <h2 className="flex items-center gap-1.5 font-semibold">
             <Wind size={16} aria-hidden /> Viento en las salidas
           </h2>
           <p className="text-sm text-suave">Cuántas salidas tuvieron cada condición.</p>
+          {pronostico.respondidos > 0 && (
+            <div className="rounded-[12px] bg-borde/40 p-3">
+              <p className="text-xs text-suave">¿Se cumplió el pronóstico?</p>
+              <p className="text-xl font-semibold">{pronostico.pct}%</p>
+              <p className="text-xs text-suave">
+                Se cumplió en {pronostico.cumplidos} de {pronostico.respondidos} {pronostico.respondidos === 1 ? "salida que lo respondió" : "salidas que lo respondieron"}
+              </p>
+            </div>
+          )}
           {[
             { titulo: "Dirección", items: direcciones.map(([k, n]) => [nombreDireccion(k), n] as const) },
             { titulo: "Intensidad", items: fuerzas.map(([k, n]) => [textoFuerza(k), n] as const) },

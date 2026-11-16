@@ -21,6 +21,8 @@ type Props = {
     vientoDir: string;
     vientoFuerza: string;
     vientoEstabilidad: string;
+    /** "" sin responder, "SI" o "NO": ¿se cumplió el pronóstico del viento? */
+    pronostico: "" | "SI" | "NO";
     corrienteDir: string;
     corrienteNudos: string;
     /** momento de la última modificación al abrir (ver lib/version.ts) */
@@ -83,6 +85,7 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
   const [vientoDir, setVientoDir] = useState(inicial.vientoDir);
   const [vientoFuerza, setVientoFuerza] = useState(inicial.vientoFuerza);
   const [vientoEstabilidad, setVientoEstabilidad] = useState(inicial.vientoEstabilidad);
+  const [pronostico, setPronostico] = useState(inicial.pronostico);
   const [corrienteDir, setCorrienteDir] = useState(inicial.corrienteDir);
   const [corrienteNudos, setCorrienteNudos] = useState(inicial.corrienteNudos);
   const [presentes, setPresentes] = useState(() => new Set(inicial.presentes));
@@ -101,7 +104,7 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
   // Cambios sin guardar: se compara todo lo cargado contra lo último guardado. Mientras haya
   // diferencias, el navegador avisa antes de cerrar o recargar (cargar una jornada lleva trabajo).
   const instantanea = JSON.stringify([
-    tipo, terminado, bajada, regreso, vientoDir, vientoFuerza, vientoEstabilidad, corrienteDir, corrienteNudos, plan, resumen,
+    tipo, terminado, bajada, regreso, vientoDir, vientoFuerza, vientoEstabilidad, pronostico, corrienteDir, corrienteNudos, plan, resumen,
     [...presentes].sort(), [...temasPlan].sort(), [...temasHecho].sort(), notas, califs,
   ]);
   const [base, setBase] = useState(instantanea);
@@ -223,6 +226,31 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
                 />
                 <span className="flex min-h-10 items-center justify-center rounded-[9px] text-sm font-medium text-suave transition-[background-color,color] duration-[160ms] peer-checked:bg-acento peer-checked:text-[#fff] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-acento dark:peer-checked:text-[#06202e]">
                   {e.texto}
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <fieldset className="mt-3">
+          <legend className="etiqueta">¿Se cumplió el pronóstico?</legend>
+          <div role="radiogroup" className="grid grid-cols-2 gap-1 rounded-[12px] border border-borde bg-superficie p-1">
+            {[
+              { valor: "SI" as const, texto: "Sí" },
+              { valor: "NO" as const, texto: "No" },
+            ].map((o) => (
+              <label key={o.valor} className="cursor-pointer">
+                <input
+                  type="radio"
+                  name="pronostico"
+                  value={o.valor}
+                  checked={pronostico === o.valor}
+                  // tocar de nuevo la opción elegida la borra (queda sin responder)
+                  onClick={() => pronostico === o.valor && setPronostico("")}
+                  onChange={() => setPronostico(o.valor)}
+                  className="peer sr-only"
+                />
+                <span className="flex min-h-10 items-center justify-center rounded-[9px] text-sm font-medium text-suave transition-[background-color,color] duration-[160ms] peer-checked:bg-acento peer-checked:text-[#fff] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-acento dark:peer-checked:text-[#06202e]">
+                  {o.texto}
                 </span>
               </label>
             ))}

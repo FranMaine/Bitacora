@@ -25,6 +25,7 @@ const Datos = z.object({
   vientoDir: z.string().trim().refine((d) => d === "" || direccionVientoValida(d), "Dirección de viento inválida"),
   vientoFuerza: z.string().trim().refine((v) => v === "" || fuerzaVientoValida(v), "Intensidad de viento inválida"),
   vientoEstabilidad: z.string().trim().refine((v) => v === "" || estabilidadVientoValida(v), "Tipo de viento inválido"),
+  pronostico: z.enum(["", "SI", "NO"]),
   tipo: z.enum(["ENTRENAMIENTO", "REGATA"]),
   corrienteDir: z.string().trim().refine((d) => d === "" || direccionVientoValida(d), "Dirección de corriente inválida"),
   corrienteNudos: z
@@ -51,6 +52,7 @@ export async function guardarEntrenamiento(
     vientoDir: formData.get("vientoDir") ?? "",
     vientoFuerza: formData.get("vientoFuerza") ?? "",
     vientoEstabilidad: formData.get("vientoEstabilidad") ?? "",
+    pronostico: formData.get("pronostico") ?? "",
     tipo: formData.get("tipo") ?? "ENTRENAMIENTO",
     corrienteDir: formData.get("corrienteDir") ?? "",
     corrienteNudos: formData.get("corrienteNudos") ?? "",
@@ -60,7 +62,7 @@ export async function guardarEntrenamiento(
     horaRegreso: formData.get("horaRegreso") ?? "",
   });
   if (!parsed.success) return { error: parsed.error.issues[0].message + "." };
-  const { plan, resumen, horaBajada, horaRegreso, vientoDir, vientoFuerza, vientoEstabilidad, tipo, corrienteDir, corrienteNudos } = parsed.data;
+  const { plan, resumen, horaBajada, horaRegreso, vientoDir, vientoFuerza, vientoEstabilidad, pronostico, tipo, corrienteDir, corrienteNudos } = parsed.data;
   if (horaBajada && horaRegreso && horaRegreso <= horaBajada) {
     return { error: "El regreso tiene que ser posterior a la bajada al agua." };
   }
@@ -109,6 +111,7 @@ export async function guardarEntrenamiento(
     vientoDir: vientoDir || null,
     vientoFuerza: vientoFuerza || null,
     vientoEstabilidad: vientoEstabilidad || null,
+    pronosticoCumplido: pronostico === "" ? null : pronostico === "SI",
     tipo,
     corrienteDir: corrienteDir || null,
     corrienteNudos: corrienteNudos === "" ? null : Number(corrienteNudos.replace(",", ".")),

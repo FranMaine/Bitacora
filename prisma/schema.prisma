@@ -103,6 +103,8 @@ model Entrenamiento {
   vientoFuerza String?
   // CONSTANTE | OSCILANTE
   vientoEstabilidad String?
+  // ¿Se cumplió el pronóstico del viento? null = sin responder
+  pronosticoCumplido Boolean?
   // Legado (cuando se cargaba en nudos): ya no se usa en la app.
   vientoNudos Int?
   // ENTRENAMIENTO (lo de siempre) o REGATA (día de regata: además del viento se
