@@ -79,6 +79,7 @@ export const nombreDireccion = (dir: string) => NOMBRE_DIRECCION[dir] ?? dir;
 /** Intensidad del viento, en palabras (lo que se guarda es el valor). */
 export const FUERZAS_VIENTO = [
   { valor: "BAJOS", texto: "Bajos" },
+  { valor: "BAJOS_MEDIOS", texto: "Bajos/medios" },
   { valor: "MEDIOS", texto: "Medios" },
   { valor: "FUERTES", texto: "Fuertes" },
   { valor: "MEDIOS_FUERTES", texto: "Medios/fuertes" },

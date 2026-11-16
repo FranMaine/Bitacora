@@ -78,7 +78,7 @@ export default async function PaginaHoy({ searchParams }: { searchParams: Promis
       <section className="caja space-y-3 p-4" aria-label="Estadísticas del día">
         <h2 className="font-semibold">Estadísticas del día</h2>
         {hechos.length === 0 ? (
-          <p className="text-sm text-suave">Todavía no hay entrenamientos dados por realizados en este día. Cuando se carguen, acá aparece el resumen.</p>
+          <p className="text-sm text-suave">Todavía no hay entrenamientos terminados en este día. Cuando se tilde “Terminó el entrenamiento”, acá aparece el resumen.</p>
         ) : (
           <>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

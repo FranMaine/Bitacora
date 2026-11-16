@@ -230,7 +230,7 @@ export default async function PaginaEstadisticas({ searchParams }: { searchParam
     <div className="space-y-6">
       <div>
         <h1 className="display text-3xl sm:text-4xl">Estadísticas</h1>
-        <p className="mt-1 text-suave">Solo cuentan los entrenamientos dados por realizados.</p>
+        <p className="mt-1 text-suave">Solo cuentan los entrenamientos marcados como terminados.</p>
       </div>
 
       <Filtros etiqueta="Categoría">

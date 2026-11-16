@@ -16,7 +16,6 @@ export type EstadoEntrenamiento = {
   guardadoEn?: string;
   /** el entrenamiento cambió desde que se abrió: no se guardó nada y se pregunta qué hacer */
   conflicto?: string;
-  accion?: "plan" | "realizado";
 };
 
 const Hora = z.string().trim().refine((h) => h === "" || horaValida(h), "Hora inválida");
@@ -66,12 +65,13 @@ export async function guardarEntrenamiento(
     return { error: "El regreso tiene que ser posterior a la bajada al agua." };
   }
 
-  // "Guardar igual" (después de un aviso de conflicto) manda forzar=plan|realizado en lugar de accion.
+  // "Guardar igual" (después de un aviso de conflicto) manda forzar.
   const forzar = formData.get("forzar") !== null;
   const versionDelFormulario = String(formData.get("version") ?? "");
-  const realizado = (forzar ? formData.get("forzar") : formData.get("accion")) === "realizado";
+  // El tilde "Terminó el entrenamiento": solo con él cuenta en las estadísticas. Sin tilde queda en curso.
+  const realizado = formData.get("terminado") !== null;
   if (realizado && (!horaBajada || !horaRegreso)) {
-    return { error: "Para dar el entrenamiento por realizado cargá la hora de bajada y la de regreso." };
+    return { error: "Para marcarlo como terminado cargá la hora de bajada y la de regreso (o sacá el tilde “Terminó”)." };
   }
 
   const categoria = await db.categoria.findUnique({ where: { id: categoriaId }, select: { id: true } });
@@ -128,8 +128,8 @@ export async function guardarEntrenamiento(
     }
     const e = await tx.entrenamiento.upsert({
       where: { fecha_categoriaId: { fecha: fechaDB, categoriaId } },
-      // "Guardar plan" sobre un entrenamiento ya realizado no lo des-marca.
-      update: realizado ? { ...datos, realizado: true } : datos,
+      // El tilde manda: tildado = terminado, sin tilde = en curso (también sirve para reabrir uno terminado).
+      update: { ...datos, realizado },
       create: { ...datos, realizado, fecha: fechaDB, categoriaId, creadoPorId: instructor.id },
       select: { id: true, updatedAt: true },
     });
@@ -159,7 +159,7 @@ export async function guardarEntrenamiento(
     });
     return { version: versionDe(e.updatedAt) } as const;
   });
-  if ("conflicto" in resultado) return { conflicto: resultado.conflicto, accion: realizado ? "realizado" : "plan" };
+  if ("conflicto" in resultado) return { conflicto: resultado.conflicto };
 
   revalidatePath("/jornada");
   revalidatePath("/estadisticas");

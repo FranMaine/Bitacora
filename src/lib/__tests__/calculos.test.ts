@@ -96,6 +96,8 @@ describe("viento y tendencia", () => {
   it("nombres y valores válidos", () => {
     expect(nombreDireccion("NO")).toBe("Noroeste");
     expect(fuerzaVientoValida("MEDIOS_FUERTES")).toBe(true);
+    expect(fuerzaVientoValida("BAJOS_MEDIOS")).toBe(true);
+    expect(textoViento("E", "BAJOS_MEDIOS", null)).toBe("Este · bajos/medios");
     expect(fuerzaVientoValida("12")).toBe(false);
     expect(estabilidadVientoValida("OSCILANTE")).toBe(true);
     expect(estabilidadVientoValida("x")).toBe(false);

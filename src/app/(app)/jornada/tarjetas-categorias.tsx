@@ -22,7 +22,7 @@ export type TarjetaCategoria = {
 
 const CHIP: Record<Estado, { texto: string; clase: string }> = {
   realizado: { texto: "Realizado", clase: "chip-ok" },
-  planificado: { texto: "Planificado", clase: "chip-alerta" },
+  planificado: { texto: "En curso", clase: "chip-alerta" },
   sin_cargar: { texto: "Sin cargar", clase: "chip-neutro" },
 };
 

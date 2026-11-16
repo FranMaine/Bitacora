@@ -77,6 +77,7 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
   // formulario nunca se reinicia.
   const [, iniciar] = useTransition();
   const [tipo, setTipo] = useState(inicial.tipo);
+  const [terminado, setTerminado] = useState(inicial.realizado);
   const [bajada, setBajada] = useState(inicial.horaBajada);
   const [regreso, setRegreso] = useState(inicial.horaRegreso);
   const [vientoDir, setVientoDir] = useState(inicial.vientoDir);
@@ -100,7 +101,7 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
   // Cambios sin guardar: se compara todo lo cargado contra lo último guardado. Mientras haya
   // diferencias, el navegador avisa antes de cerrar o recargar (cargar una jornada lleva trabajo).
   const instantanea = JSON.stringify([
-    tipo, bajada, regreso, vientoDir, vientoFuerza, vientoEstabilidad, corrienteDir, corrienteNudos, plan, resumen,
+    tipo, terminado, bajada, regreso, vientoDir, vientoFuerza, vientoEstabilidad, corrienteDir, corrienteNudos, plan, resumen,
     [...presentes].sort(), [...temasPlan].sort(), [...temasHecho].sort(), notas, califs,
   ]);
   const [base, setBase] = useState(instantanea);
@@ -125,7 +126,7 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
   }, [sinGuardar]);
   function alEnviar(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // el botón que se tocó (Guardar plan / Dar por realizado / Guardar igual) viaja como "accion" o "forzar"
+    // el botón que se tocó ("Guardar igual" después de un aviso) viaja como "forzar"
     const datos = new FormData(e.currentTarget, (e.nativeEvent as SubmitEvent).submitter);
     iniciar(() => enviar(datos));
   }
@@ -463,7 +464,7 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
             <button type="button" onClick={() => window.location.reload()} className="boton boton-primario !min-h-10">
               Ver lo último guardado
             </button>
-            <button type="submit" name="forzar" value={estado.accion ?? "plan"} disabled={pendiente} className="boton !min-h-10">
+            <button type="submit" name="forzar" value="1" disabled={pendiente} className="boton !min-h-10">
               Guardar igual
             </button>
           </div>
@@ -472,17 +473,32 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
       {estado.guardado && (
         <p role="status" className="confirmar flex items-center gap-1.5 text-sm text-ok">
           <Check size={16} aria-hidden />
-          {estado.guardado === "realizado" ? "Guardado como realizado" : "Plan guardado"}
+          {estado.guardado === "realizado" ? "Guardado y terminado" : "Guardado (en curso)"}
           {estado.guardadoEn ? ` a las ${estado.guardadoEn}.` : "."}
         </p>
       )}
 
+      {/* Un solo botón Guardar: se puede ir guardando durante el día. El tilde se pone al final, cuando ya está cargado todo. */}
+      <label className={`flex cursor-pointer items-start gap-3 rounded-[12px] border p-4 transition-colors duration-[160ms] ${terminado ? "border-ok bg-ok-suave" : "border-borde bg-superficie"}`}>
+        <input
+          type="checkbox"
+          name="terminado"
+          value="1"
+          checked={terminado}
+          onChange={(e) => setTerminado(e.target.checked)}
+          className="mt-0.5 size-6 shrink-0 accent-[var(--acento)]"
+        />
+        <span>
+          <span className="block font-semibold">Terminó el entrenamiento</span>
+          <span className="block text-sm text-suave">
+            Tildalo al final del día, cuando ya cargaste la hora de regreso. Recién ahí cuenta en las estadísticas.
+          </span>
+        </span>
+      </label>
+
       <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] lg:bottom-0 -mx-4 flex gap-3 border-t border-borde bg-fondo/95 px-4 py-3 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:px-0 md:py-0">
-        <button type="submit" name="accion" value="plan" disabled={pendiente} className="boton flex-1">
-          Guardar plan
-        </button>
-        <button type="submit" name="accion" value="realizado" disabled={pendiente} className="boton boton-primario flex-1">
-          {inicial.realizado ? "Actualizar realizado" : "Dar por realizado"}
+        <button type="submit" disabled={pendiente} className="boton boton-primario w-full">
+          {pendiente ? "Guardando…" : "Guardar"}
         </button>
       </div>
     </form>
