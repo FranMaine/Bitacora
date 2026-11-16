@@ -120,9 +120,9 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
       if (estado.version) setVersion(estado.version);
     }
   }
-  // Al guardar con el tilde "Terminó", se cierra esta pantalla y se vuelve a la Jornada de ese día.
+  // Al guardar (con o sin el tilde "Terminó"), se cierra esta pantalla y se vuelve a la Jornada de ese día.
   useEffect(() => {
-    if (estado.guardado === "realizado") router.push(`/jornada?fecha=${fecha}`);
+    if (estado.guardado) router.push(`/jornada?fecha=${fecha}`);
   }, [estado, fecha, router]);
   useEffect(() => {
     if (!sinGuardar) return;
