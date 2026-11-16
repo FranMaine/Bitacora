@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { ChevronDown, Check, Clock, MessageSquare, MessageSquareText, Waves, Wind } from "lucide-react";
 import { Avatar } from "@/components/avatar";
@@ -71,6 +72,7 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
     }
   };
   const [estado, enviar, pendiente] = useActionState<EstadoEntrenamiento, FormData>(accion, {});
+  const router = useRouter();
   // Con qué versión del entrenamiento se abrió (se actualiza en cada guardado) para no pisar cambios de otros.
   const [version, setVersion] = useState(inicial.version);
   // Todos los campos son controlados. Ojo: con <form action={...}> React 19 REINICIA el formulario al terminar
@@ -118,6 +120,10 @@ export function FormularioEntrenamiento({ fecha, categoriaId, alumnos, temas, fa
       if (estado.version) setVersion(estado.version);
     }
   }
+  // Al guardar con el tilde "Terminó", se cierra esta pantalla y se vuelve a la Jornada de ese día.
+  useEffect(() => {
+    if (estado.guardado === "realizado") router.push(`/jornada?fecha=${fecha}`);
+  }, [estado, fecha, router]);
   useEffect(() => {
     if (!sinGuardar) return;
     const avisar = (e: BeforeUnloadEvent) => {
