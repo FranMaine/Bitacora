@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useEnvio } from "@/lib/usar-envio";
 import { guardarEvaluacion, type EstadoEvaluacion } from "./actions";
 
 type Criterio = { id: string; nombre: string; valor: number | null; anterior: number | null };
@@ -24,9 +25,10 @@ export function FormularioEvaluacion({
     guardarEvaluacion.bind(null, alumnoId, evaluacionId),
     {},
   );
+  const alEnviar = useEnvio(accion);
 
   return (
-    <form action={accion} className="space-y-5">
+    <form onSubmit={alEnviar} className="space-y-5">
       <div className="caja p-4">
         <label htmlFor="fecha" className="etiqueta">Fecha de la evaluación</label>
         <input id="fecha" name="fecha" type="date" defaultValue={fecha} max={hoy} required className="campo sm:max-w-56" />

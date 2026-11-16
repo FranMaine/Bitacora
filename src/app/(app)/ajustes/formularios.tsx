@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
+import { useEnvio } from "@/lib/usar-envio";
 import { agregarItem, agregarInstructor, cambiarMiClave, type EstadoAjustes, type TipoCatalogo } from "./actions";
 import { MensajeForm } from "@/components/mensaje-form";
 
@@ -15,9 +16,10 @@ function useLimpiar(estado: EstadoAjustes) {
 
 export function FormularioAgregarItem({ tipo, placeholder }: { tipo: TipoCatalogo; placeholder: string }) {
   const [estado, accion, pendiente] = useActionState<EstadoAjustes, FormData>(agregarItem.bind(null, tipo), {});
+  const alEnviar = useEnvio(accion);
   const ref = useLimpiar(estado);
   return (
-    <form action={accion} ref={ref} className="space-y-2">
+    <form onSubmit={alEnviar} ref={ref} className="space-y-2">
       <div className="flex gap-2">
         <input name="nombre" required placeholder={placeholder} aria-label="Nombre" className="campo" />
         <button type="submit" disabled={pendiente} className="boton boton-primario shrink-0">Agregar</button>
@@ -29,9 +31,10 @@ export function FormularioAgregarItem({ tipo, placeholder }: { tipo: TipoCatalog
 
 export function FormularioInstructor() {
   const [estado, accion, pendiente] = useActionState<EstadoAjustes, FormData>(agregarInstructor, {});
+  const alEnviar = useEnvio(accion);
   const ref = useLimpiar(estado);
   return (
-    <form action={accion} ref={ref} className="space-y-3">
+    <form onSubmit={alEnviar} ref={ref} className="space-y-3">
       <div>
         <label htmlFor="i-nombre" className="etiqueta">Nombre</label>
         <input id="i-nombre" name="nombre" required className="campo" />
@@ -52,9 +55,10 @@ export function FormularioInstructor() {
 
 export function FormularioClave() {
   const [estado, accion, pendiente] = useActionState<EstadoAjustes, FormData>(cambiarMiClave, {});
+  const alEnviar = useEnvio(accion);
   const ref = useLimpiar(estado);
   return (
-    <form action={accion} ref={ref} className="space-y-3">
+    <form onSubmit={alEnviar} ref={ref} className="space-y-3">
       <div>
         <label htmlFor="c-actual" className="etiqueta">Contraseña actual</label>
         <input id="c-actual" name="actual" type="password" required autoComplete="current-password" className="campo" />

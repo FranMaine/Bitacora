@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
+import { useEnvio } from "@/lib/usar-envio";
 import { iniciarSesion, type EstadoLogin } from "./actions";
 
 export function FormularioLogin({ conRecuperar }: { conRecuperar: boolean }) {
   const [estado, accion, pendiente] = useActionState<EstadoLogin, FormData>(iniciarSesion, {});
+  const alEnviar = useEnvio(accion);
 
   return (
-    <form action={accion} className="mt-8 space-y-4">
+    <form onSubmit={alEnviar} className="mt-8 space-y-4">
       <div>
         <label htmlFor="email" className="etiqueta">Email</label>
         <input id="email" name="email" type="email" autoComplete="username" required className="campo" />

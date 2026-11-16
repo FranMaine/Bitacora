@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
+import { useEnvio } from "@/lib/usar-envio";
 import { Check, Pencil, Wrench } from "lucide-react";
 import { crearObservacion, guardarCosto, marcarArreglado, type EstadoGomon } from "./actions";
 import { MensajeForm } from "@/components/mensaje-form";
@@ -8,6 +9,7 @@ import { MensajeForm } from "@/components/mensaje-form";
 /** Carga de una observación nueva (queda pendiente). */
 export function FormularioObservacion({ embarcacionId, hoy }: { embarcacionId: string; hoy: string }) {
   const [estado, accion, pendiente] = useActionState<EstadoGomon, FormData>(crearObservacion.bind(null, embarcacionId), {});
+  const alEnviar = useEnvio(accion);
   const formulario = useRef<HTMLFormElement>(null);
 
   // Al cargar bien, el formulario queda limpio para la siguiente observación.
@@ -19,7 +21,7 @@ export function FormularioObservacion({ embarcacionId, hoy }: { embarcacionId: s
   }, [estado]);
 
   return (
-    <form action={accion} ref={formulario} className="caja space-y-3 p-4">
+    <form onSubmit={alEnviar} ref={formulario} className="caja space-y-3 p-4">
       <h2 className="flex items-center gap-2 font-semibold">
         <Wrench size={17} aria-hidden /> Nueva observación
       </h2>
@@ -57,6 +59,7 @@ export function FormularioObservacion({ embarcacionId, hoy }: { embarcacionId: s
 export function MarcarArreglado({ id, fechaObservada, hoy }: { id: string; fechaObservada: string; hoy: string }) {
   const [abierto, setAbierto] = useState(false);
   const [estado, accion, pendiente] = useActionState<EstadoGomon, FormData>(marcarArreglado.bind(null, id), {});
+  const alEnviar = useEnvio(accion);
 
   if (!abierto) {
     return (
@@ -66,7 +69,7 @@ export function MarcarArreglado({ id, fechaObservada, hoy }: { id: string; fecha
     );
   }
   return (
-    <form action={accion} className="aparecer w-full space-y-3 rounded-[12px] border border-borde bg-fondo/60 p-3">
+    <form onSubmit={alEnviar} className="aparecer w-full space-y-3 rounded-[12px] border border-borde bg-fondo/60 p-3">
       <div>
         <label htmlFor={`solucion-${id}`} className="etiqueta">¿Qué se hizo? (opcional)</label>
         <textarea id={`solucion-${id}`} name="solucion" rows={2} maxLength={1000} className="campo" placeholder="Ej.: se parchó el flotador y se infló a presión…" />
@@ -94,6 +97,7 @@ export function MarcarArreglado({ id, fechaObservada, hoy }: { id: string; fecha
 export function EditarCosto({ id, costo }: { id: string; costo: number | null }) {
   const [abierto, setAbierto] = useState(false);
   const [estado, accion, pendiente] = useActionState<EstadoGomon, FormData>(guardarCosto.bind(null, id), {});
+  const alEnviar = useEnvio(accion);
 
   if (!abierto) {
     return (
@@ -103,7 +107,7 @@ export function EditarCosto({ id, costo }: { id: string; costo: number | null })
     );
   }
   return (
-    <form action={accion} className="aparecer flex w-full flex-wrap items-center gap-2">
+    <form onSubmit={alEnviar} className="aparecer flex w-full flex-wrap items-center gap-2">
       <label htmlFor={`editar-costo-${id}`} className="sr-only">Costo en pesos</label>
       <input id={`editar-costo-${id}`} name="costo" inputMode="numeric" autoComplete="off" defaultValue={costo ?? ""} placeholder="Pesos" className="campo !min-h-10 min-w-0 flex-1" />
       <button type="submit" disabled={pendiente} className="boton boton-primario !min-h-10 text-sm">{pendiente ? "…" : "Guardar"}</button>

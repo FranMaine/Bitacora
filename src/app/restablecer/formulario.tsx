@@ -1,13 +1,15 @@
 "use client";
 
 import { useActionState } from "react";
+import { useEnvio } from "@/lib/usar-envio";
 import { restablecerClave, type EstadoRestablecer } from "./actions";
 
 export function FormularioRestablecer({ token }: { token: string }) {
   const [estado, accion, pendiente] = useActionState<EstadoRestablecer, FormData>(restablecerClave.bind(null, token), {});
+  const alEnviar = useEnvio(accion);
 
   return (
-    <form action={accion} className="mt-8 space-y-4">
+    <form onSubmit={alEnviar} className="mt-8 space-y-4">
       <div>
         <label htmlFor="nueva" className="etiqueta">Contraseña nueva (mínimo 8 caracteres)</label>
         <input id="nueva" name="nueva" type="password" autoComplete="new-password" minLength={8} required className="campo" />

@@ -1,11 +1,13 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
+import { useEnvio } from "@/lib/usar-envio";
 import { agregarAlumnos, type EstadoForm } from "./actions";
 import { MensajeForm } from "@/components/mensaje-form";
 
 export function FormularioAlta({ categorias }: { categorias: { id: string; nombre: string }[] }) {
   const [estado, accion, pendiente] = useActionState<EstadoForm, FormData>(agregarAlumnos, {});
+  const alEnviar = useEnvio(accion);
   const nombres = useRef<HTMLTextAreaElement>(null);
 
   // Al agregar bien, se vacía la lista de nombres para cargar otro grupo.
@@ -14,7 +16,7 @@ export function FormularioAlta({ categorias }: { categorias: { id: string; nombr
   }, [estado]);
 
   return (
-    <form action={accion} className="space-y-3 pt-1">
+    <form onSubmit={alEnviar} className="space-y-3 pt-1">
       <div>
         <label htmlFor="categoriaId" className="etiqueta">Categoría</label>
         <select id="categoriaId" name="categoriaId" required className="campo" defaultValue="">

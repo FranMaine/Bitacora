@@ -1,13 +1,15 @@
 "use client";
 
 import { useActionState } from "react";
+import { useEnvio } from "@/lib/usar-envio";
 import { registrarse, type EstadoRegistro } from "./actions";
 
 export function FormularioRegistro({ pideCodigo }: { pideCodigo: boolean }) {
   const [estado, accion, pendiente] = useActionState<EstadoRegistro, FormData>(registrarse, {});
+  const alEnviar = useEnvio(accion);
 
   return (
-    <form action={accion} className="mt-8 space-y-4">
+    <form onSubmit={alEnviar} className="mt-8 space-y-4">
       {pideCodigo && (
         <div>
           <label htmlFor="codigo" className="etiqueta">Código de invitación</label>
